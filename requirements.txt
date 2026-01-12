@@ -1,1 +1,4 @@
 # list all the python libraries
+
+flask
+pytest
