@@ -1,0 +1,1 @@
+#how to package the app into a docker image, ensure every app runs on same machine.

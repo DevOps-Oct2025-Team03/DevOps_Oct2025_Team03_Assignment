@@ -1,0 +1,1 @@
+#create the flask app , register routes , load configurations

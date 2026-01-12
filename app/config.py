@@ -1,0 +1,1 @@
+# Stores application configuration (secret keys), reads environment variables
