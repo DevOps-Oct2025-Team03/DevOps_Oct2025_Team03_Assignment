@@ -1,0 +1,4 @@
+no CSS, JS or images files being created in sprint 1 yet so we use ".gitkeep" to make sure that it is actually 
+commiting the folder itself because empty folder will not be commited 
+
+need to rmb to add folders to store CSS  , JS and images seperately
