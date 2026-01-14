@@ -50,20 +50,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
  
-      # 1. Start the DB and Web containers using Docker Compose
-      - name: Start Services
+      - name: Start Infrastructure (DB + App)
         run: |
-          docker-compose up -d --build
-          # Give the database a few seconds to initialize
-          sleep 10
+          # Use 'docker compose' (V2) to avoid 'command not found'
+          docker compose up -d --build
+          # Essential for PostgreSQL initialization
+          sleep 15
  
-      # 2. Run tests INSIDE the running web container
-      # This ensures the tests can connect to the 'db' service
-      - name: Run Security & Data Isolation Tests
+      - name: Run Automated Security Tests
+        # Executes pytest inside the container to verify Data Isolation
         run: |
-          docker-compose exec -T web pytest -v
+          docker compose exec -T web pytest -v
  
-      # 3. Build verification (Optional but good for logs)
-      - name: Verify Docker Build
-        run: |
-          docker ps
+      - name: Container Status on Failure
+        if: failure()
+        run: docker compose logs
