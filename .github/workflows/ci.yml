@@ -61,7 +61,8 @@ jobs:
       # This ensures the tests can connect to the 'db' service
       - name: Run Security & Data Isolation Tests
         run: |
-          docker-compose exec -T web pytest -v
+          docker compose exec -T web pytest -v
+
  
       # 3. Build verification (Optional but good for logs)
       - name: Verify Docker Build

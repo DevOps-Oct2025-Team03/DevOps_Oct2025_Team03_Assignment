@@ -21,8 +21,6 @@ services:
       - "5000:5000"
     depends_on:
       - db
-    env_file:
-      - .env
     environment:
       # This points to the "db" service above
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/appdb
