@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:15
     container_name: app-db
-    restart: always
+    restart: on-failure  # This tells Docker to try again if it crashes
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

@@ -53,7 +53,7 @@ jobs:
       - name: Start Infrastructure (PostgreSQL + Flask)
         run: |
           docker compose up -d --build
-          sleep 20 # Increased wait time for DB stability
+          sleep 30 # Increased wait time for DB stability
 
       - name: Seed Database & Verify Hashing
         run: |
