@@ -1,34 +1,69 @@
 # on every push or pull request
 
-name: CI Pipeline
+# name: CI Pipeline
 
+# on:
+#   push:
+#     branches: ["dev","main"]
+#   pull_request:
+#     branches: ["main"]
+
+# jobs:
+#   build-test-docker:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Setup Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.11"
+
+#       - name: Install dependencies
+#         run: |
+#           pip install -r requirements.txt
+
+#       - name: Run tests
+#         run: |
+#           pytest -v
+
+#       - name: Build Docker image
+#         run: |
+#           docker build -t flask-devops-app .
+
+
+name: DevSecOps CI Pipeline
+ 
 on:
   push:
-    branches: ["dev","main"]
+    branches: ["dev", "main"]
   pull_request:
     branches: ["main"]
-
+ 
 jobs:
   build-test-docker:
     runs-on: ubuntu-latest
-
+ 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
+ 
+      # 1. Start the DB and Web containers using Docker Compose
+      - name: Start Services
         run: |
-          pip install -r requirements.txt
-
-      - name: Run tests
+          docker-compose up -d --build
+          # Give the database a few seconds to initialize
+          sleep 10
+ 
+      # 2. Run tests INSIDE the running web container
+      # This ensures the tests can connect to the 'db' service
+      - name: Run Security & Data Isolation Tests
         run: |
-          pytest -v
-
-      - name: Build Docker image
+          docker-compose exec -T web pytest -v
+ 
+      # 3. Build verification (Optional but good for logs)
+      - name: Verify Docker Build
         run: |
-          docker build -t flask-devops-app .
+          docker ps
