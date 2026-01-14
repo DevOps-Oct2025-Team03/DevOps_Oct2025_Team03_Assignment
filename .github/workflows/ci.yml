@@ -35,36 +35,37 @@
 
 
 name: DevSecOps CI Pipeline
- 
+
 on:
   push:
     branches: ["dev", "main"]
   pull_request:
     branches: ["main"]
- 
+
 jobs:
   build-test-docker:
     runs-on: ubuntu-latest
- 
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
- 
-      # 1. Start the DB and Web containers using Docker Compose
-      - name: Start Services
+
+      - name: Start Infrastructure (PostgreSQL + Flask)
         run: |
           docker compose up -d --build
-          # Give the database a few seconds to initialize
-          sleep 10
- 
-      # 2. Run tests INSIDE the running web container
-      # This ensures the tests can connect to the 'db' service
+          sleep 20 # Increased wait time for DB stability
+
+      - name: Seed Database & Verify Hashing
+        run: |
+          # This creates the hashed users for your evidence
+          docker compose exec -T web python seed.py 
+          # This prints the hashes into the GitHub logs so you can screenshot them!
+          docker exec app-db psql -U postgres -d appdb -c "SELECT username, password_hash FROM users;"
+
       - name: Run Security & Data Isolation Tests
         run: |
+          # These are your automated Security Gates
           docker compose exec -T web pytest -v
 
- 
-      # 3. Build verification (Optional but good for logs)
-      - name: Verify Docker Build
-        run: |
-          docker ps
+      - name: Verify Infrastructure Status
+        run: docker ps
