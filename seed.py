@@ -1,27 +1,29 @@
-# seed.py - for testing of hashing of pw for dev epic 2
+# seed.py (updated section)
 from app import create_app
 from app.database import db, User, File
 
 app = create_app()
 with app.app_context():
-    # Clear existing data to prevent duplicates
     db.drop_all()
     db.create_all()
 
-    # 1. Create an Admin (Credential Protection Test)
     admin = User(username="admin_user", role="admin")
-    admin.set_password("admin123") # Hashes via Bcrypt
+    admin.set_password("admin123")
     
-    # 2. Create a Regular User
     user_a = User(username="user_a", role="user")
     user_a.set_password("user123")
 
     db.session.add_all([admin, user_a])
-    db.session.commit()
+    db.session.commit() # Save users first so they get IDs
 
-    # 3. Create a File for User A (Data Isolation Test)
-    file_a = File(original_filename="secret.txt", owner_id=user_a.id)
+    # Create file with ALL required fields to pass NOT NULL constraints
+    file_a = File(
+        original_filename="secret.txt",
+        stored_filename="abcdef12345.txt", # Added to pass constraint
+        size_bytes=1024,                   # Added to pass constraint
+        owner_id=user_a.id
+    )
     db.session.add(file_a)
     db.session.commit()
 
-    print("✅ Database seeded with Admin, User, and isolated files!")
+    print("✅ Database Seeded Successfully with all constraints met!")
