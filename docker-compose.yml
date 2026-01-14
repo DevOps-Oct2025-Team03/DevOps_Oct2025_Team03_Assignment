@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:15
     container_name: app-db
-    restart: on-failure  # This tells Docker to try again if it crashes
+    restart: on-failure
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -13,17 +13,26 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
- 
+    healthcheck:
+      # This ensures the DB is ready to accept connections
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     container_name: flask-app
+    # Critical: Restart if it crashes during DB startup
+    restart: on-failure 
     ports:
       - "5000:5000"
-    depends_on:
-      - db
     environment:
-      # This points to the "db" service above
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/appdb
- 
+    depends_on:
+      db:
+        # Critical: Only start web once db is healthy
+        condition: service_healthy 
+
 volumes:
   postgres_data:
