@@ -188,3 +188,5 @@ AI usage summary:Conceptual Learning:
 - Security Logic: Instead of just providing code, the AI acted as a tutor to explain the mechanics of Bcrypt, allowing me to verify Protected Credential Storage by auditing hashes directly in the database logs.
 - Troubleshooting & Integrity: The AI helped me decode complex SQL error messages to learn how database constraints (like NOT NULL) enforce Data Isolation and prevent the insertion of incomplete, insecure records.
 - Validation: All conceptual advice was translated into project-specific configurations, which I then manually validated through the CI pipeline and SQL terminal queries to ensure compliance with Epic 2 requirements
+
+QA test trigger - Jan 17
