@@ -42,6 +42,10 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-test-docker:
     runs-on: ubuntu-latest
@@ -53,44 +57,57 @@ jobs:
       - name: Start Infrastructure (PostgreSQL + Flask)
         run: |
           docker compose up -d --build
-          sleep 30 # Increased wait time for DB stability
+          sleep 30
 
       - name: Seed Database & Verify Hashing
         run: |
-          # This creates the hashed users for your evidence
-          docker compose exec -T web python seed.py 
-          # This prints the hashes into the GitHub logs so you can screenshot them!
+          docker compose exec -T web python seed.py
           docker exec app-db psql -U postgres -d appdb -c "SELECT username, password_hash FROM users;"
 
       - name: Run Security & Data Isolation Tests
         run: |
-          # These are your automated Security Gates
           docker compose exec -T web pytest -v
 
       - name: Verify Infrastructure Status
         run: docker ps
 
-        # push image to ghrc Kubernetes ---
+      # --- GHCR: Build & Push image for Kubernetes ---
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # GHCR requires lowercase image names
+      - name: Set image name (lowercase)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Log in to GHCR
-        #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') # push ghcr to dev too
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image (GHCR)
-        #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') # push ghcr to dev too
+      # Push different tags depending on branch:
+      # - dev branch pushes :dev and :<sha>
+      # - main branch pushes :latest and :<sha>
+      - name: Build and Push Docker Image (GHCR) - dev
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ${{ env.IMAGE }}:dev
+            ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Build and Push Docker Image (GHCR) - main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
