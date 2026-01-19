@@ -13,7 +13,8 @@ def index():
 
 @main.route("/health", methods=["GET"])
 def health():
-    return jsonify(status="ok")
+    return {"status": "ok"}, 200
+
 
 # @main.route("/debug/create-user")
 # def debug_create_user():

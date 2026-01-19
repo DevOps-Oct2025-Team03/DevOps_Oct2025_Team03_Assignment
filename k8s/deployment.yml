@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/devops-oct2025-team03/devops_oct2025_team03_assignment:latest
+        # for dev for now - need change when testing for pushing to main
+          image: ghcr.io/devops-oct2025-team03/devops_oct2025_team03_assignment:dev
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
