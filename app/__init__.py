@@ -10,6 +10,9 @@ def create_app():
     db.init_app(app)
     bcrypt.init_app(app)
 
+    # register routes (THIS is what makes /health exist)
+    app.register_blueprint(main)
+
     with app.app_context():
         # This is the line that actually builds the tables in the DB container
         db.create_all()
