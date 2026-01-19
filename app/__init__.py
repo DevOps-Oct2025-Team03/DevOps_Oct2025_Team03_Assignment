@@ -1,6 +1,7 @@
 from flask import Flask
 from .database import db, bcrypt
 from .config import Config # Import your config file
+from .routes import main  
  
 def create_app():
     app = Flask(__name__)
