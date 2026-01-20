@@ -1,3 +1,5 @@
+# link internet to pods
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,9 +16,7 @@ spec:
     spec:
       containers:
         - name: web
-        # for dev for now - need change when testing for pushing to main
           image: ghcr.io/devops-oct2025-team03/devops_oct2025_team03_assignment:dev
-          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
@@ -25,22 +25,10 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: SECRET_KEY
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: DATABASE_URL
-
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 5000
-            initialDelaySeconds: 15
-            periodSeconds: 10
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /app/uploads 
+      volumes:
+        - name: uploads-storage
+          persistentVolumeClaim:
+            claimName: uploads-pvc 

@@ -1,3 +1,5 @@
+#link pods to database
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
