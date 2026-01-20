@@ -47,10 +47,11 @@ DevOps_Oct2025_TeamXX_Assignment/
 │   └── workflows/
 │       └── ci.yml               # GitHub Actions CI pipeline
 │
-├── docs/                        # Documentation & evidence
-│   └── evidence/
-│       ├── ci-run.png            # CI success screenshot
-│       └── docker-build.png      # Docker build screenshot
+├── k8s/                        
+│   ├── deloyment.yml            # Flask application deployment (replicas, probes)
+│   ├── service.yml              # Service for internal load balancing
+│   ├── secret.yml               # Secure environment variables
+│   ├── postgres.yml             # Database deployment and service
 │
 ├── Dockerfile                   # Docker image definition
 ├── requirements.txt             # Python dependencies
@@ -158,6 +159,67 @@ Available endpoints:
 - Automated Security Seeding: Executes seed.py to populate the live database with test users and hashed credentials.
 - Credential Audit: Prints hashed passwords to the CI logs, providing verifiable evidence that Bcrypt encryption is active.
 - Security & Data Isolation Gates: Runs pytest inside the running container to verify that password hashing and file ownership constraints are strictly enforced.
+
+## Why use Kubernetes?
+Kubernetes is implemented to enhance the robustness and production-readiness of the application:
+
+- Self-Healing
+Kubernetes continuously monitors application health using liveness and readiness probes linked to the /health endpoint. If a container becomes unresponsive, Kubernetes automatically restarts it without manual intervention.
+- Fault Isolation & High Availability
+The application is deployed with multiple replicas. If one pod fails or is deleted, traffic is seamlessly routed to the remaining healthy pods, ensuring uninterrupted access for users.
+- Scalability Blueprint
+Kubernetes provides a standardised deployment model that allows future teams or industrial partners to scale the application horizontally with minimal configuration changes.
+- Secure Configuration Management
+Sensitive credentials such as database connection strings and Flask secret keys are injected via Kubernetes Secrets, preventing hard-coded values inside images or source code.
+- Industry-Relevant Infrastructure as Code (IaC)
+All Kubernetes resources are defined declaratively using YAML manifests, creating a reproducible and auditable deployment blueprint suitable for real-world DevOps workflows.
+
+## Kubernetes Architecture
+
+- Deployment: Runs the Flask web application with multiple replicas.
+- Service: Acts as an internal load balancer, routing traffic evenly across all pods.
+- Secrets: Stores sensitive environment variables securely.
+- Health Probes: /health endpoint is used to determine pod readiness and liveness.
+
+```bash
+User
+ │
+ ▼
+Kubernetes Service
+ │
+ ├── Flask Pod (Replica 1)
+ ├── Flask Pod (Replica 2)
+ └── Flask Pod (Replica 3)
+```
+
+## Deployment Instructions
+1. Apply Kubernetes resources
+
+```bash
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/postgres.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+```
+2. Verify pod status
+```bash
+kubectl get pods
+```
+Note: All pods should be in running state
+
+3. Access the application (local testing)
+```bash
+kubectl port-forward svc/web-service 8080:80
+```
+Available endpoints:
+- http://localhost:8080/health
+
+## Fault Tolerance Verification
+To demostrate Kubernetes self healing 
+```bash
+kubectl delete pod <web-pod-name> # replace the web name with it when run kubectl get pods
+kubectl get pods -w
+```
 
 ## LLM Usage Declaration
 
