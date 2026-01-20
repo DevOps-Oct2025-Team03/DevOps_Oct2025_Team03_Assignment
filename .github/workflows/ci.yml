@@ -102,15 +102,19 @@ jobs:
           docker compose up -d --build
           sleep 30
 
-      - name: Wait for DB Tables and Verify Auto-Seeding
+      - name: Wait for Flask to initialize DB and Verify Auto-Seeding
         run: |
-          for i in {1..10}; do
-            docker exec app-db psql -U postgres -d appdb -c "\dt" && break
-            echo "Waiting for tables..."
+          for i in {1..20}; do
+            if curl -sf http://localhost:5000/health; then
+              echo "Flask is ready"
+              break
+            fi
+            echo "Waiting for Flask app..."
             sleep 3
           done
 
           docker exec app-db psql -U postgres -d appdb -c "SELECT username, role FROM users;"
+
 
       - name: Run Security & Data Isolation Tests
         run: |
