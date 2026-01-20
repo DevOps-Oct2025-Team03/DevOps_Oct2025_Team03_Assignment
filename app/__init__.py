@@ -18,6 +18,6 @@ def create_app():
         if not app.config.get("TESTING", False):
             seed()
 
-    return 
+    return app
 
 
