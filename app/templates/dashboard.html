@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head><title>User Dashboard</title></head>
+<body>
+    <h1>My Files</h1>
+    <a href="/logout">Logout</a>
+
+    <section>
+        <h3>Upload New File</h3>
+        <form action="/dashboard/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit">Upload</button>
+        </form>
+    </section>
+
+    <hr>
+
+    <table border="1">
+        <tr>
+            <th>Filename</th>
+            <th>Actions</th>
+        </tr>
+        {% for file in files %}
+        <tr>
+            <td>{{ file.original_filename }}</td>
+            <td>
+    <a href="{{ url_for('main.download_file', file_id=file.id) }}">Download</a>
+    <form action="{{ url_for('main.delete_file', file_id=file.id) }}" method="POST" style="display:inline;">
+        <button type="submit">Delete</button>
+    </form>
+</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
