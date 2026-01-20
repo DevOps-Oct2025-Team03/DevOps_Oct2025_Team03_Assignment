@@ -1,12 +1,14 @@
-# on every push or pull request
-
-# name: CI Pipeline
+# name: DevSecOps CI Pipeline
 
 # on:
 #   push:
-#     branches: ["dev","main"]
+#     branches: ["dev", "main"]
 #   pull_request:
 #     branches: ["main"]
+
+# permissions:
+#   contents: read
+#   packages: write
 
 # jobs:
 #   build-test-docker:
@@ -16,22 +18,66 @@
 #       - name: Checkout code
 #         uses: actions/checkout@v4
 
-#       - name: Setup Python
-#         uses: actions/setup-python@v5
+#       - name: Start Infrastructure (PostgreSQL + Flask)
+#         run: |
+#           docker compose up -d --build
+#           sleep 30
+
+#       - name: Seed Database & Verify Hashing
+#         run: |
+#           docker compose exec -T web python seed.py
+#           docker exec app-db psql -U postgres -d appdb -c "SELECT username, password_hash FROM users;"
+
+#       - name: Run Security & Data Isolation Tests
+#         run: |
+#           docker compose exec -T web pytest -v
+
+#       - name: Verify Infrastructure Status
+#         run: docker ps
+
+#       # --- GHCR: Build & Push image for Kubernetes ---
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
+
+#       # GHCR requires lowercase image names
+#       - name: Set image name (lowercase)
+#         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+#       - name: Log in to GHCR
+#         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+#         uses: docker/login-action@v3
 #         with:
-#           python-version: "3.11"
+#           registry: ghcr.io
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
 
-#       - name: Install dependencies
-#         run: |
-#           pip install -r requirements.txt
+#       # Push different tags depending on branch:
+#       # - dev branch pushes :dev and :<sha>
+#       # - main branch pushes :latest and :<sha>
+#       - name: Build and Push Docker Image (GHCR) - dev
+#         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           file: ./Dockerfile
+#           push: true
+#           tags: |
+#             ${{ env.IMAGE }}:dev
+#             ${{ env.IMAGE }}:${{ github.sha }}
 
-#       - name: Run tests
-#         run: |
-#           pytest -v
+#       - name: Build and Push Docker Image (GHCR) - main
+#         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           file: ./Dockerfile
+#           push: true
+#           tags: |
+#             ${{ env.IMAGE }}:latest
+#             ${{ env.IMAGE }}:${{ github.sha }}
 
-#       - name: Build Docker image
-#         run: |
-#           docker build -t flask-devops-app .
+
+
 
 
 name: DevSecOps CI Pipeline
@@ -59,10 +105,10 @@ jobs:
           docker compose up -d --build
           sleep 30
 
-      - name: Seed Database & Verify Hashing
+      # NEW: Verify database was auto-seeded
+      - name: Verify Database Auto-Seeding
         run: |
-          docker compose exec -T web python seed.py
-          docker exec app-db psql -U postgres -d appdb -c "SELECT username, password_hash FROM users;"
+          docker exec app-db psql -U postgres -d appdb -c "SELECT username, role FROM users;"
 
       - name: Run Security & Data Isolation Tests
         run: |
@@ -75,7 +121,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # GHCR requires lowercase image names
       - name: Set image name (lowercase)
         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
@@ -87,9 +132,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Push different tags depending on branch:
-      # - dev branch pushes :dev and :<sha>
-      # - main branch pushes :latest and :<sha>
       - name: Build and Push Docker Image (GHCR) - dev
         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         uses: docker/build-push-action@v6
@@ -111,3 +153,4 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
+

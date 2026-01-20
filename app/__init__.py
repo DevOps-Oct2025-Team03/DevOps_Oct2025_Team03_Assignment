@@ -1,20 +1,20 @@
 from flask import Flask
 from .database import db, bcrypt
-from .config import Config # Import your config file
-from .routes import main  
- 
+from .config import Config
+from .routes import main
+from .seed import seed
+
 def create_app():
     app = Flask(__name__)
-    app.config.from_object('app.config.Config')
+    app.config.from_object(Config)
 
     db.init_app(app)
     bcrypt.init_app(app)
 
-    # register routes (THIS is what makes /health exist)
     app.register_blueprint(main)
 
     with app.app_context():
-        # This is the line that actually builds the tables in the DB container
         db.create_all()
+        seed()  
 
     return app
