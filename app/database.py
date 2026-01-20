@@ -1,7 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from datetime import datetime
-import sqlite3
  
 db = SQLAlchemy()
 bcrypt = Bcrypt()

@@ -1,5 +1,43 @@
-version: "3.9"
+# version: "3.9"
  
+# services:
+#   db:
+#     image: postgres:15
+#     container_name: app-db
+#     restart: on-failure
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: postgres
+#       POSTGRES_DB: appdb
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+ 
+#   web:
+#     build: .
+#     container_name: flask-app
+#     # Critical: Restart if it crashes during DB startup
+#     restart: on-failure
+#     ports:
+#       - "5000:5000"
+#     environment:
+#       - DATABASE_URL=postgresql://postgres:postgres@db:5432/appdb
+#     depends_on:
+#       db:
+#         # Critical: Only start web once db is healthy
+#         condition: service_healthy
+ 
+# volumes:
+#   postgres_data:
+
+
+
 services:
   db:
     image: postgres:15
@@ -18,20 +56,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
- 
+
   web:
     build: .
     container_name: flask-app
-    # Critical: Restart if it crashes during DB startup
     restart: on-failure
     ports:
       - "5000:5000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/appdb
+      - FLASK_APP=run.py
+      - FLASK_DEBUG=1  # Useful for development/testing
     depends_on:
       db:
-        # Critical: Only start web once db is healthy
         condition: service_healthy
- 
+
 volumes:
   postgres_data:

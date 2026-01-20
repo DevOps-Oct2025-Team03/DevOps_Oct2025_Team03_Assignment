@@ -1,22 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Admin Dashboard</title>
 </head>
 <body>
 
-<h2>Admin Dashboard</h2>
+<h1>Admin Dashboard</h1>
 
-<p>Welcome, Admin!</p>
+<h2>Create User</h2>
+<form method="POST" action="/admin/create_user">
+    <input type="text" name="username" placeholder="Username" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <select name="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Create</button>
+</form>
 
-<a href="/logout">Logout</a>
+<hr>
 
-<h3>Registered Users</h3>
-<ul>
+<h2>Users</h2>
+
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Action</th>
+    </tr>
+
     {% for user in users %}
-        <li>{{ user.username }} ({{ user.role }})</li>
+    <tr>
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.role }}</td>
+        <td>
+            {% if user.id != session["user_id"] %}
+            <button
+                data-user-id="{{ user.id }}"
+                onclick="deleteUser(this)"
+            >
+                Delete
+            </button>
+            {% else %}
+            (You)
+            {% endif %}
+        </td>
+    </tr>
     {% endfor %}
-</ul>
+</table>
 
+<script src="/static/js/admin.js"></script>
 </body>
 </html>
