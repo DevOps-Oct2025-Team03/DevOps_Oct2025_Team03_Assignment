@@ -18,17 +18,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+ 
   web:
     build: .
     container_name: flask-app
+    # Critical: Restart if it crashes during DB startup
     restart: on-failure
     ports:
       - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/appdb
     depends_on:
       db:
+        # Critical: Only start web once db is healthy
         condition: service_healthy
-    command: python run.py   # or flask run, depending on your app
-
+ 
 volumes:
   postgres_data:

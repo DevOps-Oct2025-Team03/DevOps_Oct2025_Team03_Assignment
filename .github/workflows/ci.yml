@@ -94,37 +94,59 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ----------------------------
+      # 1. Checkout repository
+      # ----------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ----------------------------
+      # 2. Start Docker infrastructure
+      # ----------------------------
       - name: Start Infrastructure (PostgreSQL + Flask)
         run: |
           docker compose up -d --build
-          sleep 30
 
-      - name: Wait for Flask to initialize DB and Verify Auto-Seeding
+      # ----------------------------
+      # 3. Wait for Flask health endpoint
+      # (THIS IS THE CRITICAL FIX)
+      # ----------------------------
+      - name: Wait for Flask to be ready
         run: |
+          echo "Waiting for Flask /health endpoint..."
           for i in {1..20}; do
-            if docker compose exec -T web curl -sf http://localhost:5000/health; then
+            if curl -s http://localhost:5000/health | grep -q ok; then
               echo "Flask is ready"
               break
             fi
-            echo "Waiting for Flask app..."
+            echo "Waiting for Flask..."
             sleep 3
           done
 
+      # ----------------------------
+      # 4. Verify DB tables + auto-seeding
+      # ----------------------------
+      - name: Verify Database Auto-Seeding
+        run: |
+          docker exec app-db psql -U postgres -d appdb -c "\dt"
           docker exec app-db psql -U postgres -d appdb -c "SELECT username, role FROM users;"
 
-
-
+      # ----------------------------
+      # 5. Run tests (security + isolation)
+      # ----------------------------
       - name: Run Security & Data Isolation Tests
         run: |
           docker compose exec -T web pytest -v
 
+      # ----------------------------
+      # 6. Verify infrastructure status
+      # ----------------------------
       - name: Verify Infrastructure Status
         run: docker ps
 
-      # --- GHCR: Build & Push image for Kubernetes ---
+      # ----------------------------
+      # 7. Build & Push image to GHCR
+      # ----------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
