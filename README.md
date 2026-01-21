@@ -28,19 +28,30 @@ DevOps_Oct2025_TeamXX_Assignment/
 │   ├── __init__.py              # App factory (creates Flask app)
 │   ├── routes.py                # Basic routes (/ and /health)
 │   ├── config.py                # Configuration (env-based)
-│   ├── database.py             
+│   ├── database.py
+│   ├── seed.py                      # Database population script
 │   │
-│   ├── templates/               # HTML templates 
-│   │   └── .gitkeep
+│   ├── templates/               # HTML templates
+│       ├── login.html
+│       ├── dashboard.html
+│   │   └── admin.html
 │   │
 │   └── static/                  # CSS / JS / images
-│       └── .gitkeep
+│       └── css/
+│            ├── login.css                    
+│            └── style.css
+│       └── js/
+│            ├── admin.js
+│            ├── login.js
+│            └── script.js     
 │
 ├── tests/                       # Automated tests
 │   ├── __init__.py
 │   ├── test_basic.py            # Sanity test for CI
 |   ├── test_data_isolation.py   # Ownership constraint tests
 |   ├── conftest.py              # Test configuration & DB fixtures
+|   ├── test_auth.py             # Login/Logout & RBAC Verification
+|   ├── test_app.py              # File Isolation & Admin Logic
 |   └── test_security.py         # Bcrypt hashing verification
 │
 ├── .github/                     # GitHub configuration
@@ -56,7 +67,6 @@ DevOps_Oct2025_TeamXX_Assignment/
 ├── Dockerfile                   # Docker image definition
 ├── requirements.txt             # Python dependencies
 ├── run.py                       # Application entry point
-├── seed.py                      # Database population script
 ├── docker-compose.yml           # Multi-container orchestration
 └── README.md                    # Sprint 1 documentation
 
@@ -66,9 +76,9 @@ DevOps_Oct2025_TeamXX_Assignment/
 - Framework: Flask
 - Testing: pytest
 - Database: PostgreSQL 15
-- Security: Bcrypt (Password Hashing)
+- Security: Bcrypt (Password Hashing) and RBAC
 - CI: GitHub Actions
-- Containerization: Docker
+- Containerization: Docker and Kubernetes
 
 ## Changes Made 
 ### Setup Application Skeleton & CI Pipeline Scope (Sprint 1 - Epic 1 (DEV))
@@ -85,6 +95,12 @@ The following items were completed in Sprint 1:
 - Container Orchestration: Migrated to a multi-container setup (Flask + PostgreSQL) using Docker Compose.
 - Database Health Checks: Implemented health checks and restart policies to handle service dependencies and prevent race conditions.
 - Automated Seeding: Developed a seed.py script to populate the database with secure test data for CI validation.
+
+## Sprint 2 : Implemented the features (user dashboard, admin dashboard, user and admin login , admin able to create user)
+- security implemented:
+  - Credential Protection: Uses salted Bcrypt hashes; plain text passwords are never stored.
+  - RBAC Gate: Admins are restricted to account management; Users are restricted to file management.
+  - Data Isolation: All file operations verify that current_user.id matches file.owner_id. Unauthorized access attempts trigger a 404 Not Found to prevent data discovery.
 
 ## Data Dictionary (Database Schema)
 
@@ -238,17 +254,34 @@ CI pipeline configuration, and Docker setup.
 locally and via GitHub Actions CI by the team.
 
 ### For Sprint 1 - Secure Database Design & Data Dictionary Implementation
-Tools used: Gemini (Google)Example prompts:
+Tools used: Gemini (Google)
+Example prompts:
 - "Help me understand why the 'web' service crashes in CI while the 'db' service is still starting up."
 - "How do I interpret a Bcrypt hash prefix like $2b$ to verify it meets security standards?"
 - "Explain why my seed script is failing a 'NotNullViolation' when I've already defined the columns in SQLAlchemy."
 - "What is the logic behind using Docker health checks for service dependency management?"
   
-AI usage summary:Conceptual Learning: 
+AI usage summary:
 - AI was used to bridge the gap between application code and infrastructure.
 - It helped me understand race conditions in container orchestration, leading to a more resilient setup using healthcheck and depends_on logic.
 - Security Logic: Instead of just providing code, the AI acted as a tutor to explain the mechanics of Bcrypt, allowing me to verify Protected Credential Storage by auditing hashes directly in the database logs.
 - Troubleshooting & Integrity: The AI helped me decode complex SQL error messages to learn how database constraints (like NOT NULL) enforce Data Isolation and prevent the insertion of incomplete, insecure records.
 - Validation: All conceptual advice was translated into project-specific configurations, which I then manually validated through the CI pipeline and SQL terminal queries to ensure compliance with Epic 2 requirements
+
+## Sprint 2: Implementation of app features
+Tools used: Gemini (Google)
+Example prompts:
+- "Update my GitHub Actions pipeline to wait for a /health endpoint and create upload directories before running pytest".
+- "How do I implement RBAC so Admins manage users and regular Users manage files?".
+- "Write a test case to prove User B cannot download User A's file, returning a 404 instead of an error".
+- "How do I fix a DetachedInstanceError when accessing a User ID outside of the SQLAlchemy session?".
+- "Configure a Kubernetes Deployment with 3 replicas sharing a single Persistent Volume Claim (PVC) for file uploads".
+
+AI usage summary:
+- Security & Logic Design: Gemini was used to architect the Role-Based Access Control (RBAC) logic, specifically using session-based role checks to protect Admin routes and ensure file operations (upload/download/delete) enforce strict ownership.
+- Data Isolation Validation: The AI assisted in creating a comprehensive Security Test Suite in pytest. This included "Fail Cases" to verify that unauthorized access to files or admin panels is correctly blocked with 404 or 403 status codes.
+- Infrastructure Persistence: The AI helped resolve data consistency issues across multiple Kubernetes replicas by guiding the implementation of Persistent Volume Claims (PVC) with ReadWriteMany access modes, allowing 3 pods to share the same physical storage.
+- CI/CD Pipeline Hardening: Gemini provided the logic for advanced pipeline steps, such as automated directory permissioning (chmod 777 uploads) and health-check loops, ensuring the DevSecOps pipeline only pushes to GHCR if all 15+ security tests pass.
+- Database Integrity Troubleshooting: Used to debug complex SQLAlchemy IntegrityError (NotNull/Unique violations), leading to better session management and data validation within the testing environment.
 
 QA test trigger - Jan 17
