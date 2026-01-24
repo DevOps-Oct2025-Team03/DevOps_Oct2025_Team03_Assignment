@@ -1,6 +1,26 @@
 import pytest
 from app.database import db, User
 
+
+# =========================
+# TDD
+# =========================
+
+
+def test_password_complexity_fail(client):
+    with client.session_transaction() as sess:
+        sess["user_id"] = 99
+        sess["role"] = "admin"
+
+    res = client.post("/admin/create_user", data={
+        "username": "weak_user",
+        "password": "123",
+        "role": "user"
+    })
+
+    assert res.status_code == 400
+
+
 # =========================
 # SUCCESSFUL AUTH TESTS
 # =========================
@@ -35,6 +55,20 @@ def test_logout_clears_session(client):
     resp = client.get("/logout", follow_redirects=False)
     assert resp.status_code == 302
     assert "/login" in resp.headers["Location"]
+
+def test_password_complexity_success(client):
+    with client.session_transaction() as sess:
+        sess["user_id"] = 99
+        sess["role"] = "admin"
+
+    res = client.post("/admin/create_user", data={
+        "username": "strong_user",
+        "password": "Strong123",
+        "role": "user"
+    })
+
+    assert res.status_code == 302
+
 
 # =========================
 # FAILED / SECURITY TESTS

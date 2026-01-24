@@ -5,8 +5,21 @@ import os
 from flask import send_from_directory, flash
 from werkzeug.utils import secure_filename
 import uuid
+import re
 
 main = Blueprint("main", __name__)
+
+# Helper function
+
+def is_password_strong(password):
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Za-z]", password): # at least 1 letter 
+        return False
+    if not re.search(r"\d", password): # at least 1 number
+        return False
+    return True
+
 
 
 # =========================
@@ -175,6 +188,9 @@ def create_user():
     if not username or not password:
         abort(400)
 
+    if not is_password_strong(password):
+        return "Password does not meet complexity requirements", 400
+
     if role not in ("user", "admin"):
         abort(400)
 
@@ -187,7 +203,6 @@ def create_user():
     db.session.add(u)
     db.session.commit()
 
-    # Success: Redirect back to Admin dashboard
     return redirect("/admin")
 
 

@@ -3,7 +3,22 @@ import io
 from app.database import db, User, File
 
 # =========================
-# 1. ADMIN ACTIONS (Success & Fail)
+# TDD EXAMPLE
+# =========================
+
+def test_admin_delete_self_fail_tdd(client):
+    """FAIL: Admin is blocked from deleting their own account."""
+    with client.session_transaction() as sess:
+        sess['user_id'] = 99
+        sess['role'] = 'admin'
+    
+    # Logic prevents user_id == session.get("user_id")
+    res = client.post('/admin/delete_user/99')
+    assert res.status_code == 400
+
+
+# =========================
+# 1. ADMIN ACTIONS (Integration Test)
 # =========================
 
 def test_admin_create_user_success(client):
@@ -36,18 +51,9 @@ def test_admin_create_user_fail_missing_data(client):
     res = client.post('/admin/create_user', data={'username': 'no_pass_user'})
     assert res.status_code == 400
 
-def test_admin_delete_self_fail(client):
-    """FAIL: Admin is blocked from deleting their own account."""
-    with client.session_transaction() as sess:
-        sess['user_id'] = 99
-        sess['role'] = 'admin'
-    
-    # Logic prevents user_id == session.get("user_id")
-    res = client.post('/admin/delete_user/99')
-    assert res.status_code == 400
 
 # =========================
-# 2. USER FILE ACTIONS (Success & Fail)
+# 2. USER FILE ACTIONS (Integration test)
 # =========================
 
 def test_user_file_operations_success(client):
