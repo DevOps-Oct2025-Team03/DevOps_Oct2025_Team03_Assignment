@@ -37,7 +37,7 @@ jobs:
           format: 'ALL'
           out: 'reports'
           args: >
-            --failOnCVSS 7
+            --failOnCVSS 1
             --enableRetired
             --scan ./requirements.txt      
 
