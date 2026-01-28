@@ -285,3 +285,11 @@ AI usage summary:
 - Database Integrity Troubleshooting: Used to debug complex SQLAlchemy IntegrityError (NotNull/Unique violations), leading to better session management and data validation within the testing environment.
 
 QA test trigger - Jan 17
+
+---
+
+## CI Trigger Verification
+
+This section exists solely to validate that the GitHub Actions CI pipeline is automatically triggered by repository changes.
+
+CI trigger verification – Jan 29 2026
