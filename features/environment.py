@@ -1,3 +1,4 @@
+
 import os
 import shutil
 from app import create_app
@@ -15,6 +16,7 @@ def before_all(context):
     context.app = create_app(test_config={
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'SECRET_KEY': 'behave-test-secret', #addedd- daphne
         'WTF_CSRF_ENABLED': False,
         'UPLOAD_FOLDER': UPLOAD_FOLDER
     })
