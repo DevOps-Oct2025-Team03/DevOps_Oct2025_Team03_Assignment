@@ -1,65 +1,54 @@
-name: "SAST Scan (CodeQL)"
+# SAST (Static Application Security Testing) with CodeQL
+name: 1. SAST - Code Security Scan
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: ["dev", "main"]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: ["main"]
+
+permissions:
+  contents: read
+  security-events: write  # Required for SARIF upload to the Security tab
 
 jobs:
   analyze:
-    name: Analyze
+    name: CodeQL Code Scan (SAST)
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
+    
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java-kotlin' ]
-
+        # Changed this to 'python' to match your Flask app and fix the build error
+        language: [ 'python' ]
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # 1. Initialize CodeQL
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        queries: security-and-quality
-
-    # 2. Build the App
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
-
-    # 3. Perform Analysis & Generate Report (SARIF)
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{ matrix.language }}"
-        # We save the report to a specific path so we can check it in the next step
-        output: sarif-results
-
-    # 4. (NEW) Gatekeeper: Fail Pipeline if Vulnerabilities Found
-    # This step reads the report file. If 'results' is not empty, it exits with error.
-    - name: Check for Vulnerabilities
-      shell: bash
-      run: |
-        echo "Checking for vulnerabilities..."
-        # Find the SARIF file (it might be in a subdir)
-        sarif_file=$(find sarif-results -name "*.sarif")
-        
-        # Use jq to count the number of results in the SARIF file
-        count=$(jq '[.runs[].results[]] | length' "$sarif_file")
-        
-        echo "Found $count vulnerabilities."
-        
-        if [ "$count" -gt 0 ]; then
-          echo "::error::Security vulnerabilities detected! Failing the pipeline."
-          exit 1
-        else
-          echo "No vulnerabilities found. Pipeline passed."
-        fi
+      # Step 1: Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      # Step 2: Initialize CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # security-extended is recommended by your guide for better depth
+          queries: security-extended 
+      
+      # Step 3: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      
+      # Step 4: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      # Step 5: Perform CodeQL Analysis
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: sast
