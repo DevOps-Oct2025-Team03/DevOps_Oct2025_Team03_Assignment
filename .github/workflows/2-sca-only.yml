@@ -1,0 +1,51 @@
+name: 2. SCA - Dependency Security Scan
+
+on:
+  push:
+    branches: ["dev", "main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  sca:
+    name: OWASP Dependency Check (SCA)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt      
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        id: depcheck
+        with:
+          project: 'app'
+          path: '.'
+          format: 'ALL' 
+          out: 'reports'
+          # This line satisfies the "Enforce severity" task.
+          # It fails the pipeline if a vulnerability score is 7 or higher.
+          args: >
+            --failOnCVSS 7
+            --enableRetired      
+
+      - name: Upload Dependency-Check reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sca-reports
+          path: reports/
