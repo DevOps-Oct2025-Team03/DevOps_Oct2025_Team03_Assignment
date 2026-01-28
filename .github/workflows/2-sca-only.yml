@@ -38,7 +38,8 @@ jobs:
           out: 'reports'
           args: >
             --failOnCVSS 1
-            --enableRetired   
+            --enableRetired  
+            --scan requirements.txt
 
       - name: Upload Dependency-Check reports
         uses: actions/upload-artifact@v4
