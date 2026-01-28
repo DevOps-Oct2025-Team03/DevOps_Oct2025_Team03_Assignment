@@ -31,17 +31,15 @@ jobs:
 
       - name: Run OWASP Dependency-Check
         uses: dependency-check/Dependency-Check_Action@main
-        id: depcheck
         with:
-          project: 'app'
-          path: '.'
-          format: 'ALL' 
+          project: 'DevSecOps_Team03'
+          path: '.' 
+          format: 'ALL'
           out: 'reports'
-          # This line satisfies the "Enforce severity" task.
-          # It fails the pipeline if a vulnerability score is 7 or higher.
           args: >
             --failOnCVSS 7
-            --enableRetired      
+            --enableRetired
+            --scan ./requirements.txt      
 
       - name: Upload Dependency-Check reports
         uses: actions/upload-artifact@v4
