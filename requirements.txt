@@ -1,13 +1,8 @@
-# list all the python libraries
-
 flask==1.1.2
-jinja2==2.10
-Flask-SQLAlchemy==3.1.1
-Flask-Bcrypt==1.0.1
+flask-sqlalchemy==3.1.1
+flask-bcrypt==1.0.1
 psycopg2-binary==2.9.9
 pytest==7.4.3
-flask-jwt-extended
+flask-jwt-extended==4.7.1
 behave==1.2.6
-
-
-
+pyyaml==3.13
