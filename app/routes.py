@@ -50,7 +50,20 @@ def admin_required(f):
 # =========================
 @main.route("/", methods=["GET"])
 def index():
-    return jsonify(message="Flask app running"), 200
+    # TEMPORARY: Adding links so the DAST scanner can "see" your routes
+    return """
+        <html>
+            <body>
+                <h1>Project Sitemap for Security Scan</h1>
+                <ul>
+                    <li><a href="/login">Login Page</a></li>
+                    <li><a href="/health">Health Check</a></li>
+                    <li><a href="/dashboard">User Dashboard</a></li>
+                    <li><a href="/admin">Admin Dashboard</a></li>
+                </ul>
+            </body>
+        </html>
+    """, 200
 
 
 @main.route("/health", methods=["GET"])
