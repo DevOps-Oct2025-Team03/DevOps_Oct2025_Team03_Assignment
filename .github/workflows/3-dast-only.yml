@@ -6,24 +6,32 @@ on:
   pull_request:
     branches: [ "main" ]
  
+# --- CRITICAL PERMISSIONS FIX ---
+permissions:
+  contents: read
+  security-events: write
+  issues: write  # Required for ZAP to create issues in your repo
+# --------------------------------
+ 
 jobs:
   dast:
     name: OWASP ZAP Scan (DAST)
     runs-on: ubuntu-latest
+ 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
  
-      # Step 1: Start the services defined in your docker-compose.yml
+      # Step 1: Start your Flask and Postgres containers
       - name: Start Infrastructure with Docker Compose
         run: |
           docker compose up -d --build
-          echo "Waiting for Flask app to be ready..."
-          # This loop waits until the app responds on port 5000
+          echo "Waiting for Flask app to be ready on port 5000..."
+          # Wait until the app responds to avoid a 'Connection Refused' error
           timeout 60s bash -c 'until curl -s localhost:5000; do sleep 2; done'
           echo "Application is Live!"
  
-      # Step 2: Run the OWASP ZAP Baseline Scan
+      # Step 2: Run the ZAP Baseline Scan (Quick check)
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
@@ -32,7 +40,7 @@ jobs:
           artifact_name: 'zap-baseline-report'
         continue-on-error: true
  
-      # Step 3: Run the OWASP ZAP Full Scan (for deeper testing)
+      # Step 3: Run the ZAP Full Scan (Active attack simulation)
       - name: ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.12.0
         with:
@@ -41,7 +49,7 @@ jobs:
           artifact_name: 'zap-fullscan-report'
         continue-on-error: true
  
-      # Step 4: Upload all DAST reports for your Sprint 4 documentation
+      # Step 4: Upload reports for your Sprint 4 Documentation
       - name: Upload DAST Reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -49,3 +57,4 @@ jobs:
           name: dast-security-reports
           path: |
             report_html.html
+            report_json.json
