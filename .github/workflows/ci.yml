@@ -182,3 +182,22 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
+            
+      # ----------------------------
+      # 8. Infrastructure as Code (Terraform)
+      # ----------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      # Simulation for Local K8s Cluster
+      - name: Terraform Apply (Simulation)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+        run: echo "Terraform would now apply the k8s manifests to the cluster."
