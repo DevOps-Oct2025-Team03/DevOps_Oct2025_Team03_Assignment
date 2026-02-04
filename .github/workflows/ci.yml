@@ -182,7 +182,13 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
-            
+
+      # ----------------------------
+      # 7.5 Create a temporary K8s cluster for testing -> GitHub Actions is failing because it doesn't have a Kubernetes cluster to talk to.
+      # ----------------------------
+      - name: Create K8s Kind Cluster
+        uses: helm/kind-action@v1.10.0
+
       # ----------------------------
       # 8. Infrastructure as Code (Terraform)
       # ----------------------------
