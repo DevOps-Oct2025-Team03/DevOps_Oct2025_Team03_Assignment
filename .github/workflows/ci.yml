@@ -100,6 +100,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ======================================================
+      # NEW ADDITION: SAST Security Scan
+      # We run this immediately after checkout.
+      # If this fails, the whole pipeline stops here.
+      # ======================================================
+      - name: Set up Python for SAST
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit Scan
+        # I CHANGED 'app/' TO '.' (Current Directory) below.
+        # This forces it to scan ALL files in the repo root.
+        run: bandit -r . -f json -o bandit-report.json
+
+      - name: Upload Bandit Report
+        if: always() # Uploads report even if the scan fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report-json
+          path: bandit-report.json
+      # ======================================================
+      # END OF NEW ADDITION
+      # ======================================================
+
       # ----------------------------
       # 2. Start Docker infrastructure
       # ----------------------------
@@ -109,7 +137,6 @@ jobs:
 
       # ----------------------------
       # 3. Wait for Flask health endpoint
-      # (THIS IS THE CRITICAL FIX)
       # ----------------------------
       - name: Wait for Flask to be ready
         run: |
@@ -184,7 +211,7 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
 
       # ----------------------------
-      # 7.5 Create a temporary K8s cluster for testing -> GitHub Actions is failing because it doesn't have a Kubernetes cluster to talk to.
+      # 7.5 Create a temporary K8s cluster for testing
       # ----------------------------
       - name: Create K8s Kind Cluster
         uses: helm/kind-action@v1.10.0
