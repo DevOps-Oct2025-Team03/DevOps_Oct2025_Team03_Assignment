@@ -36,10 +36,6 @@ def create_app(test_config=None):
     from .routes import main
     app.register_blueprint(main)
 
-    # importing vulnerability blueprints
-    from app.vulnerable_test_routes import vuln_test
-    app.register_blueprint(vuln_test)
-
     # 5. Database Setup
     with app.app_context():
         # Creates SQLite/Postgres tables based on models
