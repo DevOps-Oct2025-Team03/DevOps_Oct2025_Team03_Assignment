@@ -114,14 +114,16 @@ jobs:
         run: pip install bandit
 
       - name: Run Bandit Scan
-        run: bandit -r . -f html -o bandit-report.html
+        # I CHANGED 'app/' TO '.' (Current Directory) below.
+        # This forces it to scan ALL files in the repo root.
+        run: bandit -r . -f json -o bandit-report.json
 
       - name: Upload Bandit Report
-        if: always()
+        if: always() # Uploads report even if the scan fails
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-report-html  
-          path: bandit-report.html  
+          name: bandit-report-json
+          path: bandit-report.json
       # ======================================================
       # END OF NEW ADDITION
       # ======================================================
