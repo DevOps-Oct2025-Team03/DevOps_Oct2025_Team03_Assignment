@@ -83,7 +83,7 @@ on:
   push:
     branches: ["dev", "main"]
   pull_request:
-    branches: ["main"]
+    branches: ["dev", "main"]
 
 permissions:
   contents: read
@@ -182,3 +182,28 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
+
+      # ----------------------------
+      # 7.5 Create a temporary K8s cluster for testing -> GitHub Actions is failing because it doesn't have a Kubernetes cluster to talk to.
+      # ----------------------------
+      - name: Create K8s Kind Cluster
+        uses: helm/kind-action@v1.10.0
+
+      # ----------------------------
+      # 8. Infrastructure as Code (Terraform)
+      # ----------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      # Simulation for Local K8s Cluster
+      - name: Terraform Apply (Simulation)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+        run: echo "Terraform would now apply the k8s manifests to the cluster."

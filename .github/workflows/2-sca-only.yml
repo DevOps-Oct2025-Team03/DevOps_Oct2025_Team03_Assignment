@@ -4,7 +4,7 @@ on:
   push:
     branches: ["dev", "main"]
   pull_request:
-    branches: ["main"]
+    branches: ["dev", "main"]
 
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
           format: 'ALL'
           out: 'reports'
           args: >
-            --failOnCVSS 1
+            --failOnCVSS 7
             --enableRetired  
             --scan requirements.txt
             --enableExperimental

@@ -1,5 +1,3 @@
-#link internet to pods
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,5 +8,5 @@ spec:
     app: web
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 5000
+      port: 5000         # Port for your browser (localhost)
+      targetPort: 5000 # Port where Flask is running

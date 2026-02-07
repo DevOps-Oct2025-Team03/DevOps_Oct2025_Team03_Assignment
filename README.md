@@ -22,63 +22,87 @@ This project is designed to support the following stakeholders:
 
 ## Repository Structure
 ```text
-DevOps_Oct2025_TeamXX_Assignment/
+DevOps_Oct2025_Team03_Assignment/
 │
-├── app/                         # Flask application package
-│   ├── __init__.py              # App factory (creates Flask app)
-│   ├── routes.py                # Basic routes (/ and /health)
-│   ├── config.py                # Configuration (env-based)
-│   ├── database.py
-│   ├── seed.py                      # Database population script
-│   │
-│   ├── templates/               # HTML templates
-│       ├── login.html
-│       ├── dashboard.html
-│   │   └── admin.html
-│   │
-│   └── static/                  # CSS / JS / images
-│       └── css/
-│            ├── login.css                    
-│            └── style.css
-│       └── js/
-│            ├── admin.js
-│            ├── login.js
-│            └── script.js     
+├── .github/workflows/           # Modular DevSecOps Pipelines
+│   ├── 1-sast-only.yml          # Static Application Security Testing
+│   ├── 2-sca-only.yml           # Software Composition Analysis (SCA)
+│   ├── 3-dast-only.yml          # Dynamic Application Security Testing
+│   └── ci.yml                   # Integrated CI/CD Production Pipeline
 │
-├── tests/                       # Automated tests
-│   ├── __init__.py
-│   ├── test_basic.py            # Sanity test for CI
-|   ├── test_data_isolation.py   # Ownership constraint tests
-|   ├── conftest.py              # Test configuration & DB fixtures
-|   ├── test_auth.py             # Login/Logout & RBAC Verification
-|   ├── test_app.py              # File Isolation & Admin Logic
-|   └── test_security.py         # Bcrypt hashing verification
+├── app/                         # Core Flask Application
+│   ├── static/                  # Static Assets (UI/UX)
+│   │   ├── css/
+│   │   │   ├── login.css
+│   │   │   └── style.css
+│   │   └── js/
+│   │       ├── admin.js
+│   │       ├── login.js
+│   │       └── script.js
+│   ├── templates/               # HTML UI Layer
+│   │   ├── admin.html           # RBAC Protected Admin View
+│   │   ├── dashboard.html       # User File Management View
+│   │   └── login.html           # Secure Authentication Portal
+│   ├── database.py              # SQLAlchemy Models & Constraints
+│   ├── routes.py                # Controller Logic & RBAC Enforcement
+│   └── seed.py                  # Automated DB Seeding with Bcrypt
 │
-├── .github/                     # GitHub configuration
-│   └── workflows/
-│       └── ci.yml               # GitHub Actions CI pipeline
+├── docs/                        # Project Documentation
+│   └── process.md               # Sprint Methodology & DevOps Logs
 │
-├── k8s/                        
-│   ├── deloyment.yml            # Flask application deployment (replicas, probes)
-│   ├── service.yml              # Service for internal load balancing
-│   ├── secret.yml               # Secure environment variables
-│   ├── postgres.yml             # Database deployment and service
+├── features/                    # BDD (Behavior Driven Development)
+│   ├── steps/
+│   │   └── steps.py             # Logic for Gherkin Scenarios
+│   ├── auth.feature             # Scenario: Secure Authentication
+│   ├── file_management.feature  # Scenario: Data Isolation (Ownership)
+│   ├── rbac.feature             # Scenario: Role-Based Access Control
+│   └── user_management.feature  # Scenario: Admin Account Control
 │
-├── Dockerfile                   # Docker image definition
-├── requirements.txt             # Python dependencies
-├── run.py                       # Application entry point
-├── docker-compose.yml           # Multi-container orchestration
-└── README.md                    # Sprint 1 documentation
-
+├── k8s/                         # Kubernetes Infrastructure (IaC Target)
+│   ├── deployment.yml           # Flask Web App Replicas
+│   ├── postgres-deployment.yml  # Database Instance
+│   ├── postgres-pvc.yml         # DB Persistent Volume
+│   ├── postgres-service.yml     # Internal DB Networking
+│   ├── pvc.yml                  # File Upload Persistent Storage
+│   └── service.yml              # LoadBalancer for Web Access
+│
+├── tests/                       # Automated Security Test Suite
+│   ├── conftest.py              # Pytest Fixtures
+│   ├── test_app.py              # General Logic Tests
+│   ├── test_auth.py             # Authentication Security (SAST/DAST)
+│   ├── test_basic.py            # Sanity & Health Checks
+│   ├── test_data_isolation.py   # Data Ownership Verification (DAST)
+│   └── test_security.py         # Bcrypt & Hashing Audit (SAST)
+│
+├── main.tf                      # Terraform: Core Infrastructure Logic
+├── secrets.tf                   # Terraform: Kubernetes Secret Management
+├── terraform.exe                # Local IaC Binary
+├── docker-compose.yml           # Local Multi-Container Orchestration
+├── Dockerfile                   # Application Image Definition
+├── requirements.txt             # Python Dependencies (SCA Scan Target)
+├── run.py                       # Application Entry Point
+└── README.md                    # Sprint 4 Technical Documentation
 ```
 ## Tech Stack (Current – Sprint 1)
+### Core Development
 - Language: Python 3.11
-- Framework: Flask
-- Testing: pytest
-- Database: PostgreSQL 15
-- Security: Bcrypt (Password Hashing) and RBAC
-- CI: GitHub Actions
-- Containerization: Docker and Kubernetes
+- Framework: Flask (App Factory Pattern)
+- Database: PostgreSQL 15 (Relational Data Integrity)
+- API Testing: Pytest
+
+### Security (DevSecOps Layers)
+- Authentication: Bcrypt (Salting & Password Hashing)
+- Authorization: Role-Based Access Control (RBAC)
+- SCA (Software Composition Analysis): OWASP Dependency-Check (Third-party library scanning)
+- SAST (Static Analysis): Custom Pytest security gates for credential audit & logic verification
+- DAST (Dynamic Analysis): Automated Data Isolation testing in running containers
+
+### Infrastructure & Automation
+- IaC (Infrastructure as Code): Terraform (Declarative K8s orchestration)
+- Orchestration: Kubernetes (Self-healing, Replicas, PVC, LoadBalancer)
+- CI/CD: GitHub Actions (Modular Workflows)
+- Local Development: Docker Compose & Kind (Kubernetes in Docker)
+- Container Registry: GitHub Container Registry (GHCR)
 
 ## Changes Made 
 ### Setup Application Skeleton & CI Pipeline Scope (Sprint 1 - Epic 1 (DEV))
@@ -176,6 +200,24 @@ Available endpoints:
 - Credential Audit: Prints hashed passwords to the CI logs, providing verifiable evidence that Bcrypt encryption is active.
 - Security & Data Isolation Gates: Runs pytest inside the running container to verify that password hashing and file ownership constraints are strictly enforced.
 
+## DevSecOps Security Stack
+We have implemented a "Shift-Left" security strategy where vulnerabilities are caught during the development phase, rather than in production.
+
+1. SCA (Software Composition Analysis)
+[!IMPORTANT] Tool: OWASP Dependency-Check
+- Purpose: Scans third-party libraries (Python requirements.txt) and Terraform providers for known CVEs.
+- Finding: Successfully identified CVE-2020-8554 in the Kubernetes provider, demonstrating a functional security gate.
+
+2. SAST (Static Application Security Testing)
+[!NOTE] Tool: Pytest & Manual Code Review (Simulated Bandit)
+- Purpose: Analyzes source code for security flaws without executing it.
+- Checks: Verified Bcrypt salt rounds, secure session cookie configurations, and SQL injection prevention via SQLAlchemy ORM.
+
+3. DAST (Dynamic Application Security Testing)
+[!TIP] Tool: Custom Flask Security Suite
+- Purpose: Scans the running application for vulnerabilities.
+- Logic: Our pipeline boots the app in Docker and attempts "Unauthorized Access" and "Data Leakage" scenarios to ensure RBAC is strictly enforced.
+
 ## Why use Kubernetes?
 Kubernetes is implemented to enhance the robustness and production-readiness of the application:
 
@@ -237,6 +279,26 @@ kubectl delete pod <web-pod-name> # replace the web name with it when run kubect
 kubectl get pods -w
 ```
 
+## Infrastructure as Code (IaC) & Deployment
+This project has migrated from manual kubectl commands to Automated Infrastructure as Code (IaC) using Terraform. This ensures that the environment is reproducible, version-controlled, and consistent.
+
+### Testing Kubernetes via Terraform
+To deploy the full cluster (3 Web Replicas, 1 Database, Secrets, and Volumes) from your local machine:
+1. Cleanup existing manual resources:
+```Bash
+kubectl delete -f k8s/
+```
+2. Initialize Terraform:
+```bash
+.\terraform.exe init
+```
+3. Deploy the Infrastructure:
+```bash
+.\terraform.exe apply
+
+> [!NOTE]
+> Enter "yes" when prompted to confirm the plan.
+```
 ## LLM Usage Declaration
 
 ### For Sprint 1 - Setup Application Skeleton & CI Pipeline Scope
@@ -284,6 +346,22 @@ AI usage summary:
 - CI/CD Pipeline Hardening: Gemini provided the logic for advanced pipeline steps, such as automated directory permissioning (chmod 777 uploads) and health-check loops, ensuring the DevSecOps pipeline only pushes to GHCR if all 15+ security tests pass.
 - Database Integrity Troubleshooting: Used to debug complex SQLAlchemy IntegrityError (NotNull/Unique violations), leading to better session management and data validation within the testing environment.
 
+
+## For Sprint 4 - IaC, DAST, and Security Hardening
+Tools used: Gemini (Google)
+Sample Prompts:
+- "How do I implement SAST logic in pytest to verify Bcrypt password security?"
+- "Explain why Dependency-Check (SCA) is flagging a CVE in my third-party Terraform provider."
+- "Create a DAST test case to prove User A cannot access User B's files in a running container."
+- "Fix 'no client config' error by adding a Kind Cluster to my GitHub Actions IaC workflow."
+
+AI Usage Summary:
+- SCA: Analyzed third-party "Supply Chain" risks (CVE-2020-8554) and tuned security gate thresholds to balance security with deployment.
+- SAST: Guided the implementation of secure coding patterns, specifically Bcrypt salt rounds and ORM-based SQL injection prevention, verified through static logic checks.
+- DAST: Designed "Negative Test Cases" to scan the running application for Data Isolation failures and unauthorized privilege escalation.
+- IaC: Assisted in the transition to Automated Terraform manifests and resolved CI connectivity issues using a transient Kind cluster.
+  
+  
 QA test trigger - Jan 17
 
 ---
