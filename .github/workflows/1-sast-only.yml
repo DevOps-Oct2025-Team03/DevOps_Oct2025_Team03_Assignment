@@ -1,3 +1,4 @@
+# SAST (Static Application Security Testing) with CodeQL + Bandit
 name: 1. SAST - Code Security Scan
 
 on:
