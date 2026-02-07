@@ -117,11 +117,11 @@ jobs:
         run: bandit -r . -f html -o bandit-report.html
 
       - name: Upload Bandit Report
-        if: always() # Uploads report even if the scan fails
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-report-html 
-          path: bandit-report-html 
+          name: bandit-report-html  
+          path: bandit-report.html  
       # ======================================================
       # END OF NEW ADDITION
       # ======================================================
