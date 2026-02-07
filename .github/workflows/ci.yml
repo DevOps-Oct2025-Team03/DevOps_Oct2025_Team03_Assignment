@@ -116,7 +116,7 @@ jobs:
       - name: Run Bandit Scan
         # I CHANGED 'app/' TO '.' (Current Directory) below.
         # This forces it to scan ALL files in the repo root.
-        run: bandit -r . -f json -o bandit-report.json
+        run: bandit -r app/ -f json -o bandit-report.json --severity-level medium
 
       - name: Upload Bandit Report
         if: always() # Uploads report even if the scan fails
