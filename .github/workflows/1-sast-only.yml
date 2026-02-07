@@ -1,4 +1,3 @@
-# SAST (Static Application Security Testing) with CodeQL + Bandit
 name: 1. SAST - Code Security Scan
 
 on:
@@ -12,7 +11,7 @@ permissions:
   security-events: write
 
 jobs:
-  # Job 1: Bandit (fails the pipeline when vulnerabilities are found)
+  # Bandit (fails the pipeline when vulnerabilities are found)
   bandit:
     name: Bandit Security Scan
     runs-on: ubuntu-latest
@@ -29,7 +28,7 @@ jobs:
       - name: Install Bandit
         run: pip install bandit
       
-      # This will FAIL the pipeline if any HIGH or MEDIUM issues are found
+      # Fails the pipeline if any HIGH or MEDIUM issues are found
       - name: Run Bandit Scan
         run: |
           bandit -r app/ -f json -o bandit-report.json --severity-level medium
