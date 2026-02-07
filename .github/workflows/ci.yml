@@ -120,8 +120,8 @@ jobs:
         if: always() # Uploads report even if the scan fails
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-report-json
-          path: bandit-report.json
+          name: bandit-report-html 
+          path: bandit-report-html 
       # ======================================================
       # END OF NEW ADDITION
       # ======================================================
