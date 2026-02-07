@@ -63,10 +63,11 @@ def hash_test():
     return jsonify({"hash": hashed})
 
 
-# SAST-05 FIXED: Debug mode from environment variable
+# SAST-05 FIXED: Debug mode from environment variable, bind to localhost
 def run_production_server(app):
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=5000, debug=debug_mode)
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    app.run(host=host, port=5000, debug=debug_mode)
 
 
 # SAST-06 FIXED: Escape user input before reflecting in HTML
