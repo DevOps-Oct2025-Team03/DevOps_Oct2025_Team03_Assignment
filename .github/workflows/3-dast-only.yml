@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "dev", "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "dev", "main" ]
  
 # --- CRITICAL PERMISSIONS FIX ---
 permissions:
@@ -38,7 +38,6 @@ jobs:
           target: 'http://localhost:5000'
           cmd_options: '-a'
           artifact_name: 'zap-baseline-report'
-        continue-on-error: true
  
       # Step 3: Run the ZAP Full Scan (Active attack simulation)
       - name: ZAP Full Scan
