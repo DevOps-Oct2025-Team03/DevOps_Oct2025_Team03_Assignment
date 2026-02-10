@@ -12,6 +12,7 @@ def create_app(test_config=None):
     Production, Development, and Testing (Pytest/Behave).
     """
     app = Flask(__name__)
+    add_security_headers(app)
 
     # 1. Load Configuration
     if test_config is None:
