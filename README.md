@@ -1,1 +1,372 @@
 # DevOps_Oct2025_Team03_Assignment
+## Project Overview
+
+This project is a DevSecOps **Minimum Viable Product (MVP) built using Flask to serve as a reusable template for secure software delivery.** The application implements authentication and role-based authorization, providing two main user experiences: an Admin Dashboard for managing user accounts and a User Dashboard for managing uploaded files. Admin users can create and delete user accounts, while regular users can upload, download, and delete their own files. 
+
+A core security requirement is strict data isolation: each user must only be able to view and access files that they own. This is enforced in both the backend logic and the database design where files must be tied to a valid owner.
+
+From a DevSecOps perspective, the repository is designed to demonstrate a secure delivery pipeline where code changes are validated automatically through CI on GitHub Actions, including automated testing and container builds. **The goal is to show how security and quality checks can be integrated into the commit-to-deploy process without slowing down development, providing a standardized blueprint that future teams can adopt.**
+
+## Stakeholders (Context)
+This project is designed to support the following stakeholders:
+
+- **Centre Appointment Holders**  
+  Provides a standardized and consistent deployment and CI approach across teams.
+
+- **Future Development Teams / Industrial Partners**  
+  Serves as a reusable project and CI/CD template to bootstrap future applications.
+
+- **Security Compliance Office**  
+  Establishes the foundation for automated quality and security checks through CI.
+
+
+## Repository Structure
+```text
+DevOps_Oct2025_Team03_Assignment/
+│
+├── .github/workflows/           # Modular DevSecOps Pipelines
+│   ├── 1-sast-only.yml          # Static Application Security Testing
+│   ├── 2-sca-only.yml           # Software Composition Analysis (SCA)
+│   ├── 3-dast-only.yml          # Dynamic Application Security Testing
+│   └── ci.yml                   # Integrated CI/CD Production Pipeline
+│
+├── app/                         # Core Flask Application
+│   ├── static/                  # Static Assets (UI/UX)
+│   │   ├── css/
+│   │   │   ├── login.css
+│   │   │   └── style.css
+│   │   └── js/
+│   │       ├── admin.js
+│   │       ├── login.js
+│   │       └── script.js
+│   ├── templates/               # HTML UI Layer
+│   │   ├── admin.html           # RBAC Protected Admin View
+│   │   ├── dashboard.html       # User File Management View
+│   │   └── login.html           # Secure Authentication Portal
+│   ├── database.py              # SQLAlchemy Models & Constraints
+│   ├── routes.py                # Controller Logic & RBAC Enforcement
+│   └── seed.py                  # Automated DB Seeding with Bcrypt
+│
+├── docs/                        # Project Documentation
+│   └── process.md               # Sprint Methodology & DevOps Logs
+│
+├── features/                    # BDD (Behavior Driven Development)
+│   ├── steps/
+│   │   └── steps.py             # Logic for Gherkin Scenarios
+│   ├── auth.feature             # Scenario: Secure Authentication
+│   ├── file_management.feature  # Scenario: Data Isolation (Ownership)
+│   ├── rbac.feature             # Scenario: Role-Based Access Control
+│   └── user_management.feature  # Scenario: Admin Account Control
+│
+├── k8s/                         # Kubernetes Infrastructure (IaC Target)
+│   ├── deployment.yml           # Flask Web App Replicas
+│   ├── postgres-deployment.yml  # Database Instance
+│   ├── postgres-pvc.yml         # DB Persistent Volume
+│   ├── postgres-service.yml     # Internal DB Networking
+│   ├── pvc.yml                  # File Upload Persistent Storage
+│   └── service.yml              # LoadBalancer for Web Access
+│
+├── tests/                       # Automated Security Test Suite
+│   ├── conftest.py              # Pytest Fixtures
+│   ├── test_app.py              # General Logic Tests
+│   ├── test_auth.py             # Authentication Security (SAST/DAST)
+│   ├── test_basic.py            # Sanity & Health Checks
+│   ├── test_data_isolation.py   # Data Ownership Verification (DAST)
+│   └── test_security.py         # Bcrypt & Hashing Audit (SAST)
+│
+├── main.tf                      # Terraform: Core Infrastructure Logic
+├── secrets.tf                   # Terraform: Kubernetes Secret Management
+├── terraform.exe                # Local IaC Binary
+├── docker-compose.yml           # Local Multi-Container Orchestration
+├── Dockerfile                   # Application Image Definition
+├── requirements.txt             # Python Dependencies (SCA Scan Target)
+├── run.py                       # Application Entry Point
+└── README.md                    # Sprint 4 Technical Documentation
+```
+## Tech Stack (Current – Sprint 1)
+### Core Development
+- Language: Python 3.11
+- Framework: Flask (App Factory Pattern)
+- Database: PostgreSQL 15 (Relational Data Integrity)
+- API Testing: Pytest
+
+### Security (DevSecOps Layers)
+- Authentication: Bcrypt (Salting & Password Hashing)
+- Authorization: Role-Based Access Control (RBAC)
+- SCA (Software Composition Analysis): OWASP Dependency-Check (Third-party library scanning)
+- SAST (Static Analysis): Custom Pytest security gates for credential audit & logic verification
+- DAST (Dynamic Analysis): Automated Data Isolation testing in running containers
+
+### Infrastructure & Automation
+- IaC (Infrastructure as Code): Terraform (Declarative K8s orchestration)
+- Orchestration: Kubernetes (Self-healing, Replicas, PVC, LoadBalancer)
+- CI/CD: GitHub Actions (Modular Workflows)
+- Local Development: Docker Compose & Kind (Kubernetes in Docker)
+- Container Registry: GitHub Container Registry (GHCR)
+
+## Changes Made 
+### Setup Application Skeleton & CI Pipeline Scope (Sprint 1 - Epic 1 (DEV))
+The following items were completed in Sprint 1:
+- Initialized Flask project structure
+- Implemented basic application routes
+- Created Dockerfile for containerization
+- Configured GitHub Actions CI pipeline
+- Verified application builds, tests run, and Docker image builds successfully
+
+### Secure Database Design & Data Dictionary Implementation (Sprint 1 - Epic 2 (dev))
+- Protected Credential Storage: Implemented Bcrypt hashing to ensure passwords are never stored in plain text.
+- Data Isolation: Defined database schemas with NOT NULL constraints and Foreign Keys to enforce file ownership.
+- Container Orchestration: Migrated to a multi-container setup (Flask + PostgreSQL) using Docker Compose.
+- Database Health Checks: Implemented health checks and restart policies to handle service dependencies and prevent race conditions.
+- Automated Seeding: Developed a seed.py script to populate the database with secure test data for CI validation.
+
+## Sprint 2 : Implemented the features (user dashboard, admin dashboard, user and admin login , admin able to create user)
+- security implemented:
+  - Credential Protection: Uses salted Bcrypt hashes; plain text passwords are never stored.
+  - RBAC Gate: Admins are restricted to account management; Users are restricted to file management.
+  - Data Isolation: All file operations verify that current_user.id matches file.owner_id. Unauthorized access attempts trigger a 404 Not Found to prevent data discovery.
+
+## Data Dictionary (Database Schema)
+
+The database layer enforces **Data Isolation** and **Protected Credential Storage** through strict integrity constraints to ensure system security.
+
+### 1. Users Table
+Stores authenticated entities and their security roles.
+
+| Column | Data Type | Constraints | Security Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | Integer | Primary Key | Unique internal identifier for the user. |
+| `username` | String(80) | Unique, Not Null | Identity used for authentication; prevents account collisions. |
+| `password_hash` | String(128) | Not Null | Stores salted **Bcrypt** hashes; ensures no plain text storage. |
+| `role` | String(20) | Not Null | Defines access levels (e.g., 'admin', 'user') for Role-Based Access Control (RBAC). |
+
+### 2. Files Table
+Manages uploaded file metadata with mandatory ownership links.
+
+| Column | Data Type | Constraints | Security Purpose |
+| :--- | :--- | :--- | :--- |
+| `id` | Integer | Primary Key | Unique identifier for the file record. |
+| `owner_id` | Integer | Foreign Key, Not Null | **Data Isolation**: Strictly binds every file to a valid user to prevent unauthorized access. |
+| `original_filename`| String(255) | Not Null | Original filename for user-facing identification. |
+| `stored_filename` | String(255) | Unique, Not Null | Randomized name on disk to prevent path traversal and filename guessing. |
+| `size_bytes` | Integer | Not Null | Integrity check to verify the stored file size. |
+| `created_at` | DateTime | Not Null | Audit trail for tracking data creation and file lifecycle. |
+
+## Local Setup
+### Start the entire infrastructure
+```bash
+docker compose up -d --build
+```
+### Remove Container (rebuild)
+```bash
+docker compose down
+```
+### Seed and Verify Security
+```bash
+# Populate the database
+docker compose exec web python seed.py
+
+# Verify Hashing (Audit Evidence)
+docker exec -it app-db psql -U postgres -d appdb -c "SELECT username, password_hash FROM users;"
+```
+### Run Security Tests
+```bash
+docker compose exec web pytest -v.
+```
+
+Available endpoints:
+- http://localhost:5000/
+- http://localhost:5000/health
+  
+## CI Pipeline (github action) - workflow
+
+**The CI pipeline is automatically triggered on:**
+- Push to dev and main
+- Pull requests targeting main
+
+**Pipeline steps:** (Epic 1 Dev )
+- Checkout source code
+- Install Python dependencies
+- Run automated tests
+- Build Docker image
+
+**Current Pipeline Steps (Epic 2 Dev Upgrade):**
+
+- Source Checkout: Retrieves the latest code from the repository.
+- Infrastructure Orchestration: Uses Docker Compose to launch both the Flask application and the PostgreSQL database.
+- Health Monitoring: Implements a "wait-for-it" period to ensure the database is fully initialized before tests begin, preventing race conditions.
+- Automated Security Seeding: Executes seed.py to populate the live database with test users and hashed credentials.
+- Credential Audit: Prints hashed passwords to the CI logs, providing verifiable evidence that Bcrypt encryption is active.
+- Security & Data Isolation Gates: Runs pytest inside the running container to verify that password hashing and file ownership constraints are strictly enforced.
+
+## DevSecOps Security Stack
+We have implemented a "Shift-Left" security strategy where vulnerabilities are caught during the development phase, rather than in production.
+
+1. SCA (Software Composition Analysis)
+[!IMPORTANT] Tool: OWASP Dependency-Check
+- Purpose: Scans third-party libraries (Python requirements.txt) and Terraform providers for known CVEs.
+- Finding: Successfully identified CVE-2020-8554 in the Kubernetes provider, demonstrating a functional security gate.
+
+2. SAST (Static Application Security Testing)
+[!NOTE] Tool: Pytest & Manual Code Review (Simulated Bandit)
+- Purpose: Analyzes source code for security flaws without executing it.
+- Checks: Verified Bcrypt salt rounds, secure session cookie configurations, and SQL injection prevention via SQLAlchemy ORM.
+
+3. DAST (Dynamic Application Security Testing)
+[!TIP] Tool: Custom Flask Security Suite
+- Purpose: Scans the running application for vulnerabilities.
+- Logic: Our pipeline boots the app in Docker and attempts "Unauthorized Access" and "Data Leakage" scenarios to ensure RBAC is strictly enforced.
+
+## Why use Kubernetes?
+Kubernetes is implemented to enhance the robustness and production-readiness of the application:
+
+- Self-Healing
+Kubernetes continuously monitors application health using liveness and readiness probes linked to the /health endpoint. If a container becomes unresponsive, Kubernetes automatically restarts it without manual intervention.
+- Fault Isolation & High Availability
+The application is deployed with multiple replicas. If one pod fails or is deleted, traffic is seamlessly routed to the remaining healthy pods, ensuring uninterrupted access for users.
+- Scalability Blueprint
+Kubernetes provides a standardised deployment model that allows future teams or industrial partners to scale the application horizontally with minimal configuration changes.
+- Secure Configuration Management
+Sensitive credentials such as database connection strings and Flask secret keys are injected via Kubernetes Secrets, preventing hard-coded values inside images or source code.
+- Industry-Relevant Infrastructure as Code (IaC)
+All Kubernetes resources are defined declaratively using YAML manifests, creating a reproducible and auditable deployment blueprint suitable for real-world DevOps workflows.
+
+## Kubernetes Architecture
+
+- Deployment: Runs the Flask web application with multiple replicas.
+- Service: Acts as an internal load balancer, routing traffic evenly across all pods.
+- Secrets: Stores sensitive environment variables securely.
+- Health Probes: /health endpoint is used to determine pod readiness and liveness.
+
+```bash
+User
+ │
+ ▼
+Kubernetes Service
+ │
+ ├── Flask Pod (Replica 1)
+ ├── Flask Pod (Replica 2)
+ └── Flask Pod (Replica 3)
+```
+
+## Deployment Instructions
+1. Apply Kubernetes resources
+
+```bash
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/postgres.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+```
+2. Verify pod status
+```bash
+kubectl get pods
+```
+Note: All pods should be in running state
+
+3. Access the application (local testing)
+```bash
+kubectl port-forward svc/web-service 8080:80
+```
+Available endpoints:
+- http://localhost:8080/health
+
+## Fault Tolerance Verification
+To demostrate Kubernetes self healing 
+```bash
+kubectl delete pod <web-pod-name> # replace the web name with it when run kubectl get pods
+kubectl get pods -w
+```
+
+## Infrastructure as Code (IaC) & Deployment
+This project has migrated from manual kubectl commands to Automated Infrastructure as Code (IaC) using Terraform. This ensures that the environment is reproducible, version-controlled, and consistent.
+
+### Testing Kubernetes via Terraform
+To deploy the full cluster (3 Web Replicas, 1 Database, Secrets, and Volumes) from your local machine:
+1. Cleanup existing manual resources:
+```Bash
+kubectl delete -f k8s/
+```
+2. Initialize Terraform:
+```bash
+.\terraform.exe init
+```
+3. Deploy the Infrastructure:
+```bash
+.\terraform.exe apply
+
+> [!NOTE]
+> Enter "yes" when prompted to confirm the plan.
+```
+## LLM Usage Declaration
+
+### For Sprint 1 - Setup Application Skeleton & CI Pipeline Scope
+**Tools used: ChatGPT (OpenAI)**
+
+Example prompts:
+- "Create a Flask project skeleton suitable for CI and Docker"
+- "Explain the Flask app factory pattern"
+- "Provide a minimal GitHub Actions workflow for pytest and Docker builds"
+
+AI usage summary:
+- AI tools were used as references to understand Flask project structuring,
+CI pipeline configuration, and Docker setup.
+- All suggested code and configurations were reviewed, adapted, and validated
+locally and via GitHub Actions CI by the team.
+
+### For Sprint 1 - Secure Database Design & Data Dictionary Implementation
+Tools used: Gemini (Google)
+Example prompts:
+- "Help me understand why the 'web' service crashes in CI while the 'db' service is still starting up."
+- "How do I interpret a Bcrypt hash prefix like $2b$ to verify it meets security standards?"
+- "Explain why my seed script is failing a 'NotNullViolation' when I've already defined the columns in SQLAlchemy."
+- "What is the logic behind using Docker health checks for service dependency management?"
+  
+AI usage summary:
+- AI was used to bridge the gap between application code and infrastructure.
+- It helped me understand race conditions in container orchestration, leading to a more resilient setup using healthcheck and depends_on logic.
+- Security Logic: Instead of just providing code, the AI acted as a tutor to explain the mechanics of Bcrypt, allowing me to verify Protected Credential Storage by auditing hashes directly in the database logs.
+- Troubleshooting & Integrity: The AI helped me decode complex SQL error messages to learn how database constraints (like NOT NULL) enforce Data Isolation and prevent the insertion of incomplete, insecure records.
+- Validation: All conceptual advice was translated into project-specific configurations, which I then manually validated through the CI pipeline and SQL terminal queries to ensure compliance with Epic 2 requirements
+
+## Sprint 2: Implementation of app features
+Tools used: Gemini (Google)
+Example prompts:
+- "Update my GitHub Actions pipeline to wait for a /health endpoint and create upload directories before running pytest".
+- "How do I implement RBAC so Admins manage users and regular Users manage files?".
+- "Write a test case to prove User B cannot download User A's file, returning a 404 instead of an error".
+- "How do I fix a DetachedInstanceError when accessing a User ID outside of the SQLAlchemy session?".
+- "Configure a Kubernetes Deployment with 3 replicas sharing a single Persistent Volume Claim (PVC) for file uploads".
+
+AI usage summary:
+- Security & Logic Design: Gemini was used to architect the Role-Based Access Control (RBAC) logic, specifically using session-based role checks to protect Admin routes and ensure file operations (upload/download/delete) enforce strict ownership.
+- Data Isolation Validation: The AI assisted in creating a comprehensive Security Test Suite in pytest. This included "Fail Cases" to verify that unauthorized access to files or admin panels is correctly blocked with 404 or 403 status codes.
+- Infrastructure Persistence: The AI helped resolve data consistency issues across multiple Kubernetes replicas by guiding the implementation of Persistent Volume Claims (PVC) with ReadWriteMany access modes, allowing 3 pods to share the same physical storage.
+- CI/CD Pipeline Hardening: Gemini provided the logic for advanced pipeline steps, such as automated directory permissioning (chmod 777 uploads) and health-check loops, ensuring the DevSecOps pipeline only pushes to GHCR if all 15+ security tests pass.
+- Database Integrity Troubleshooting: Used to debug complex SQLAlchemy IntegrityError (NotNull/Unique violations), leading to better session management and data validation within the testing environment.
+
+
+## For Sprint 4 - IaC, DAST, and Security Hardening
+Tools used: Gemini (Google)
+Sample Prompts:
+- "How do I implement SAST logic in pytest to verify Bcrypt password security?"
+- "Explain why Dependency-Check (SCA) is flagging a CVE in my third-party Terraform provider."
+- "Create a DAST test case to prove User A cannot access User B's files in a running container."
+- "Fix 'no client config' error by adding a Kind Cluster to my GitHub Actions IaC workflow."
+
+AI Usage Summary:
+- SCA: Analyzed third-party "Supply Chain" risks (CVE-2020-8554) and tuned security gate thresholds to balance security with deployment.
+- SAST: Guided the implementation of secure coding patterns, specifically Bcrypt salt rounds and ORM-based SQL injection prevention, verified through static logic checks.
+- DAST: Designed "Negative Test Cases" to scan the running application for Data Isolation failures and unauthorized privilege escalation.
+- IaC: Assisted in the transition to Automated Terraform manifests and resolved CI connectivity issues using a transient Kind cluster.
+  
+  
+QA test trigger - Jan 17
+
+---
+
+## CI Trigger Verification
+
+This section exists solely to validate that the GitHub Actions CI pipeline is automatically triggered by repository changes.
+
+CI trigger verification – Jan 29 2026

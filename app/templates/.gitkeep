@@ -1,0 +1,2 @@
+no html files being created in sprint 1 yet so we use ".gitkeep" to make sure that it is actually 
+commiting the folder itself because empty folder will not be commited 
