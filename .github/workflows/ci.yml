@@ -1,82 +1,3 @@
-# name: DevSecOps CI Pipeline
-
-# on:
-#   push:
-#     branches: ["dev", "main"]
-#   pull_request:
-#     branches: ["main"]
-
-# permissions:
-#   contents: read
-#   packages: write
-
-# jobs:
-#   build-test-docker:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-
-#       - name: Start Infrastructure (PostgreSQL + Flask)
-#         run: |
-#           docker compose up -d --build
-#           sleep 30
-
-#       - name: Seed Database & Verify Hashing
-#         run: |
-#           docker compose exec -T web python seed.py
-#           docker exec app-db psql -U postgres -d appdb -c "SELECT username, password_hash FROM users;"
-
-#       - name: Run Security & Data Isolation Tests
-#         run: |
-#           docker compose exec -T web pytest -v
-
-#       - name: Verify Infrastructure Status
-#         run: docker ps
-
-#       # --- GHCR: Build & Push image for Kubernetes ---
-#       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v3
-
-#       # GHCR requires lowercase image names
-#       - name: Set image name (lowercase)
-#         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-#       - name: Log in to GHCR
-#         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-#         uses: docker/login-action@v3
-#         with:
-#           registry: ghcr.io
-#           username: ${{ github.actor }}
-#           password: ${{ secrets.GITHUB_TOKEN }}
-
-#       # Push different tags depending on branch:
-#       # - dev branch pushes :dev and :<sha>
-#       # - main branch pushes :latest and :<sha>
-#       - name: Build and Push Docker Image (GHCR) - dev
-#         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-#         uses: docker/build-push-action@v6
-#         with:
-#           context: .
-#           file: ./Dockerfile
-#           push: true
-#           tags: |
-#             ${{ env.IMAGE }}:dev
-#             ${{ env.IMAGE }}:${{ github.sha }}
-
-#       - name: Build and Push Docker Image (GHCR) - main
-#         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-#         uses: docker/build-push-action@v6
-#         with:
-#           context: .
-#           file: ./Dockerfile
-#           push: true
-#           tags: |
-#             ${{ env.IMAGE }}:latest
-#             ${{ env.IMAGE }}:${{ github.sha }}
-
-
 name: DevSecOps CI Pipeline
 
 on:
@@ -207,3 +128,18 @@ jobs:
       - name: Terraform Apply (Simulation)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
         run: echo "Terraform would now apply the k8s manifests to the cluster."
+
+      # --- FINAL SUCCESS NOTIFICATION FOR STAKEHOLDERS ---
+  notify-success:
+    name: Notify Stakeholders on Success
+    runs-on: ubuntu-latest
+    needs: [sast, sca, dast]
+    # This logic ensures it only notifies if ALL jobs pass AND the branch is main
+    if: success() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Send Formatted Success Message
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d parse_mode="Markdown" \
+          -d text=" *PRODUCTION RELEASE READY* %0A%0A*Repository:* \`${{ github.repository }}\` %0A*Branch:* \`main\` %0A%0A All security checks passed. Stakeholders, the code is merged to main and verified!"
