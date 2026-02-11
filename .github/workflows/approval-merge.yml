@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write       # needed to push the PR branch
-  pull-requests: write  # needed to create/modify PR
+  pull-requests: write  # needed to create/modify PR test
 
 jobs:
   pr_to_main:
