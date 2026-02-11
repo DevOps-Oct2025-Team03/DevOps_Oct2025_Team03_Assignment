@@ -44,4 +44,4 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text="STAGING DEPLOYMENT COMPLETE %0A%0ARepository: \`${{ github.repository }}\` %0AVersion: \`${{ steps.version.outputs.version }}\` %0A%0AThe code has been merged to main and successfully deployed to the staging environment for final review."
+          -d text="STAGING DEPLOYMENT COMPLETE %0A%0ARepository: \`${{ github.repository }}\` %0AVersion: \`${{ steps.version.outputs.version }}\` %0A%0A The code has been merged to main and successfully deployed to the staging environment for final review."
