@@ -27,10 +27,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -e .
+          # Removed pip install -e . to avoid the file not found error
 
       - name: Run Tests
         run: |
+          # We manually set the path so pytest can find your code in the src folder
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
           pytest tests/ -v --cov=src --cov-report=html --cov-report=term
           echo "All tests passed!"
 
