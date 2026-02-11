@@ -2,68 +2,93 @@ name: 2-Approval and Merge to Main (CD)
 
 on:
   release:
-    types: [published] # Triggers when you click "Publish" on a draft release
+    types: [published] # When you click "Publish" on a draft release
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: write       # needed to push the PR branch
+  pull-requests: write  # needed to create/modify PR
 
 jobs:
-  merge:
-    name: Merge to main
+  pr_to_main:
+    name: Create PR dev -> main
     runs-on: ubuntu-latest
 
     steps:
-      # ----------------------------
-      # 1. Checkout with PAT (Bypasses Branch Protection)
-      # ----------------------------
-      - name: Checkout code
+      # 1) Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # Using your PAT secret here allows the push to main later
-          token: ${{ secrets.MY_RELEASE_PAT }}
 
-      # ----------------------------
-      # 2. Configure Git Identity
-      # ----------------------------
+      # 2) Configure git identity (for pushing PR branch)
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # ----------------------------
-      # 3. Perform Merge (dev -> main)
-      # ----------------------------
-      - name: Merge dev to main
+      # 3) Create a release branch from origin/dev and push it
+      - name: Create & push PR branch from dev
+        env:
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          # Ensure we have the latest from both branches
-          git fetch origin main
+          BR="release/${TAG}"
           git fetch origin dev
-          
-          # Switch to main and pull latest
-          git checkout main
-          git pull origin main
-          
-          # Merge dev into main with a non-fast-forward commit
-          git merge origin/dev --no-ff -m "Release ${{ github.event.release.tag_name }} approved"
+          git checkout -B "$BR" origin/dev
+          git push -u origin "$BR" --force
 
-      # ----------------------------
-      # 4. Push Changes to Main
-      # ----------------------------
-      - name: Push to GitHub
+      # 4) Create PR if it doesn't exist yet
+      - name: Create PR (if missing)
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          # This push succeeds because the checkout used your MY_RELEASE_PAT
-          git push origin main
-          echo "Successfully merged dev to main branch!"
+          BR="release/${TAG}"
 
-      # ----------------------------
-      # 5. Notify Stakeholders via Telegram
-      # ----------------------------
-      - name: Notify Telegram (Success)
-        if: success()
+          # Check if a PR from this head branch to main already exists
+          EXISTING_PR_NUMBER=$(gh pr list --base main --head "$BR" --json number --jq '.[0].number'  true)
+
+          if [ -n "$EXISTING_PR_NUMBER" ]; then
+            echo "PR already exists: #$EXISTING_PR_NUMBER"
+            echo "pr_number=$EXISTING_PR_NUMBER" >> $GITHUB_OUTPUT
+          else
+            # Create PR
+            gh pr create \
+              --base main \
+              --head "$BR" \
+              --title "Release ${TAG}: dev -> main" \
+              --body "Automated PR created for release **${TAG}**. Please review + approve. Branch protection will enforce required checks."
+
+            NEW_PR_NUMBER=$(gh pr list --base main --head "$BR" --json number --jq '.[0].number')
+            echo "Created PR: #$NEW_PR_NUMBER"
+            echo "pr_number=$NEW_PR_NUMBER" >> $GITHUB_OUTPUT
+          fi
+
+      # 5) OPTIONAL: Enable auto-merge (requires repo setting: Allow auto-merge)
+      - name: Enable auto-merge (optional)
+        if: steps.pr.outputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          PR="${{ steps.pr.outputs.pr_number }}"
+          # Will only merge when required checks + approvals are satisfied
+          gh pr merge "$PR" --merge --auto  echo "Auto-merge not enabled (repo setting) or not permitted."
+
+      # 6) Notify Telegram that PR was created (and auto-merge attempted)
+      - name: Notify Telegram (PR created)
+        if: steps.pr.outputs.pr_number != ''
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text="*PRODUCTION RELEASE DEPLOYED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A%0AAll security scans and CI tests passed. The code has been merged to *main* and is now live. Stakeholders, the release is complete!"
+          -d text="*RELEASE PR CREATED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A*PR:* #${{ steps.pr.outputs.pr_number }} %0A%0APlease review + approve. If auto-merge is enabled in repo settings, it will merge after checks pass."
+
+      # 7) Notify Telegram if something failed
+      - name: Notify Telegram (Failure)
+        if: failure()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d parse_mode="Markdown" \
+          -d text="*RELEASE PIPELINE FAILED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A%0ACheck GitHub Actions logs for details."
