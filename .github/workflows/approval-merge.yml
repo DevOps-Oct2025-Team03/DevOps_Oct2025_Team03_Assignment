@@ -39,29 +39,30 @@ jobs:
       # 4) Create PR if it doesn't exist yet
       - name: Create PR (if missing)
         id: pr
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
+          set -e
           BR="release/${TAG}"
 
-          # Check if a PR from this head branch to main already exists
-          EXISTING_PR_NUMBER=$(gh pr list --base main --head "$BR" --json number --jq '.[0].number'  true)
+          # Get PR number if it exists, else empty string (no failure)
+          EXISTING_PR_NUMBER="$(gh pr list --base main --head "$BR" --json number --jq '.[0].number' 2>/dev/null || echo '')"
 
           if [ -n "$EXISTING_PR_NUMBER" ]; then
             echo "PR already exists: #$EXISTING_PR_NUMBER"
-            echo "pr_number=$EXISTING_PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "pr_number=$EXISTING_PR_NUMBER" >> "$GITHUB_OUTPUT"
           else
-            # Create PR
             gh pr create \
               --base main \
               --head "$BR" \
               --title "Release ${TAG}: dev -> main" \
-              --body "Automated PR created for release **${TAG}**. Please review + approve. Branch protection will enforce required checks."
+              --body "Automated PR created for release ${TAG}. Please review + approve."
 
-            NEW_PR_NUMBER=$(gh pr list --base main --head "$BR" --json number --jq '.[0].number')
+            NEW_PR_NUMBER="$(gh pr list --base main --head "$BR" --json number --jq '.[0].number')"
             echo "Created PR: #$NEW_PR_NUMBER"
-            echo "pr_number=$NEW_PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "pr_number=$NEW_PR_NUMBER" >> "$GITHUB_OUTPUT"
           fi
 
       # 5) OPTIONAL: Enable auto-merge (requires repo setting: Allow auto-merge)
