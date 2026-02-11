@@ -45,7 +45,8 @@ jobs:
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="ALERT: SAST Scan Failed for repo: ${{ github.repository }}. Check GitHub Actions for details!"
+          -d parse_mode="Markdown" \
+          -d text=" *SAST SCAN FAILED*%0A%0A*Repo:* \`${{ github.repository }}\` %0A Critical error in CodeQL analysis. Please check the logs."
 
   # --- 2. SCA JOB ---
   sca:
@@ -81,7 +82,8 @@ jobs:
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="ALERT: SCA Scan Failed for repo: ${{ github.repository }}. Check GitHub Actions for details!"
+          -d parse_mode="Markdown" \
+          -d text=" *SCA SCAN FAILED*%0A%0A*Repo:* \`${{ github.repository }}\` %0A Vulnerabilities found in dependencies (CVSS > 7)."
 
   # --- 3. DAST JOB ---
   dast:
@@ -119,7 +121,8 @@ jobs:
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="ALERT: DAST Scan Failed for repo: ${{ github.repository }}. Check GitHub Actions for details!"
+          -d parse_mode="Markdown" \
+          -d text="*DAST SCAN FAILED*%0A%0A*Repo:* \`${{ github.repository }}\` %0A The live application scan encountered an error."
 
   # --- 4. SUCCESS NOTIFICATION FOR STAKEHOLDERS ---
   notify-success:
@@ -128,8 +131,9 @@ jobs:
     needs: [sast, sca, dast] 
     if: success() 
     steps:
-      - name: Send Telegram Success Message
+      - name: Send Formatted Success Message
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="ALL SCANS PASSED: The security pipeline for ${{ github.repository }} is clean. Stakeholders, the code is ready for review."
+          -d parse_mode="Markdown" \
+          -d text="*SECURITY PIPELINE SUCCESS* %0A%0A*Repository:* \`${{ github.repository }}\` %0A*Status:*  All Scans Passed%0A%0A The code has been verified by **SAST, SCA, and DAST**. %0A @Stakeholders: The code is clean and ready for review."
