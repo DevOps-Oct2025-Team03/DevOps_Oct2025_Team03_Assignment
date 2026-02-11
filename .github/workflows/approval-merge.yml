@@ -36,7 +36,7 @@ jobs:
           git checkout -B "$BR" origin/dev
           git push -u origin "$BR" --force
 
-      # 4) Create PR if it doesn't exist yet
+      # 4) Create PR only if there are new commits
       - name: Create PR (if missing)
         id: pr
         shell: bash
@@ -46,51 +46,40 @@ jobs:
         run: |
           set -e
           BR="release/${TAG}"
+          
+          # Check if there are differences between main and the new branch
+          # This returns a count of commits
+          COMMITS=$(git rev-list --count origin/main.."$BR")
 
-          # Get PR number if it exists, else empty string (no failure)
-          EXISTING_PR_NUMBER="$(gh pr list --base main --head "$BR" --json number --jq '.[0].number' 2>/dev/null || echo '')"
-
-          if [ -n "$EXISTING_PR_NUMBER" ]; then
-            echo "PR already exists: #$EXISTING_PR_NUMBER"
-            echo "pr_number=$EXISTING_PR_NUMBER" >> "$GITHUB_OUTPUT"
+          if [ "$COMMITS" -eq 0 ]; then
+            echo "No new commits between main and $BR. Skipping PR."
+            echo "pr_number=" >> "$GITHUB_OUTPUT"
           else
-            gh pr create \
-              --base main \
-              --head "$BR" \
-              --title "Release ${TAG}: dev -> main" \
-              --body "Automated PR created for release ${TAG}. Please review + approve."
-
-            NEW_PR_NUMBER="$(gh pr list --base main --head "$BR" --json number --jq '.[0].number')"
-            echo "Created PR: #$NEW_PR_NUMBER"
-            echo "pr_number=$NEW_PR_NUMBER" >> "$GITHUB_OUTPUT"
+            # Proceed with existing PR check or creation
+            EXISTING_PR_NUMBER="$(gh pr list --base main --head "$BR" --json number --jq '.[0].number' 2>/dev/null || echo '')"
+            if [ -n "$EXISTING_PR_NUMBER" ]; then
+              echo "pr_number=$EXISTING_PR_NUMBER" >> "$GITHUB_OUTPUT"
+            else
+              gh pr create --base main --head "$BR" --title "Release ${TAG}" --body "Automated PR."
+              NEW_PR_NUMBER="$(gh pr list --base main --head "$BR" --json number --jq '.[0].number')"
+              echo "pr_number=$NEW_PR_NUMBER" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
-      # 5) OPTIONAL: Enable auto-merge (requires repo setting: Allow auto-merge)
-      - name: Enable auto-merge (optional)
-        if: steps.pr.outputs.pr_number != ''
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PAT }}   
-        run: |
-          PR="${{ steps.pr.outputs.pr_number }}"
-          PR="$(echo "$PR" | tr -d '\r\n' | xargs)"   # remove newline + trim spaces
-          echo "Auto-merging PR=[$PR]"
-          gh pr merge "$PR" --merge --auto
 
-      # 6) Notify Telegram that PR was created (and auto-merge attempted)
+      # 5) Notify Telegram that PR was created 
       - name: Notify Telegram (PR created)
         if: steps.pr.outputs.pr_number != ''
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text="*RELEASE PR CREATED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A*PR:* #${{ steps.pr.outputs.pr_number }} %0A%0APlease review + approve. If auto-merge is enabled in repo settings, it will merge after checks pass."
+          -d text="*RELEASE PR CREATED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Branch:* \`${{ github.ref_name }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A*PR:* #${{ steps.pr.outputs.pr_number }} %0A%0APlease review + approve."
 
-      # 7) Notify Telegram if something failed
       - name: Notify Telegram (Failure)
         if: failure()
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text="*RELEASE PIPELINE FAILED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A%0ACheck GitHub Actions logs for details."
+          -d text="*RELEASE PIPELINE FAILED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Branch:* \`${{ github.ref_name }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A%0ACheck GitHub Actions logs."
