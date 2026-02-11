@@ -229,9 +229,9 @@ jobs:
             ${{ env.IMAGE }}:dev
             ${{ env.IMAGE }}:${{ steps.version.outputs.rc_version }}
 
-      # 3. Create Draft Release automatically after tests pass on dev branch
+      # 3. Create Draft Release automatically after tests pass
       - name: Create Draft Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.rc_version }}
@@ -239,8 +239,8 @@ jobs:
           body: |
             # Release Candidate
             **Version:** ${{ steps.version.outputs.rc_version }}
-            **Status:** Passed all CI/CD security and isolation tests.
-            **Next Step:** Publish this release to merge dev into main.
+            **Status:** Passed all CI/CD security and isolation tests on branch: ${{ github.ref_name }}.
+            **Next Step:** Publish this release to finalize the deployment.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
