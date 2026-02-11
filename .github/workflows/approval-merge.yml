@@ -68,13 +68,14 @@ jobs:
       # 5) OPTIONAL: Enable auto-merge (requires repo setting: Allow auto-merge)
       - name: Enable auto-merge (optional)
         if: steps.pr.outputs.pr_number != ''
+        shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PAT }}   
         run: |
           PR="${{ steps.pr.outputs.pr_number }}"
-          # Will only merge when required checks + approvals are satisfied
-          gh pr merge "$PR" --merge --auto  echo "Auto-merge not enabled (repo setting) or not permitted."
+          PR="$(echo "$PR" | tr -d '\r\n' | xargs)"   # remove newline + trim spaces
+        echo "Auto-merging PR=[$PR]"
+        gh pr merge "$PR" --merge --auto
 
       # 6) Notify Telegram that PR was created (and auto-merge attempted)
       - name: Notify Telegram (PR created)
