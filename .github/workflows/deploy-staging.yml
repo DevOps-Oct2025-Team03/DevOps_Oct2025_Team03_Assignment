@@ -25,24 +25,33 @@ jobs:
           VERSION="${GITHUB_REF#refs/tags/}"
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
+      # --- START OF DOCKER INFRASTRUCTURE ---
+      - name: Start Infrastructure (PostgreSQL + Flask)
         run: |
-          pip install -r requirements.txt
-        #  pip install -e .
+          docker compose up -d --build
+
+      - name: Wait for Flask to be ready
+        run: |
+          echo "Waiting for Flask /health endpoint..."
+          for i in {1..20}; do
+            if curl -s http://localhost:5000/health | grep -q ok; then
+              echo "Flask is ready"
+              break
+            fi
+            echo "Waiting..."
+            sleep 3
+          done
+      # --- END OF DOCKER INFRASTRUCTURE ---
 
       - name: Run Final Tests
-        run: pytest tests/ -v
+        run: |
+          # We run the tests INSIDE the container so we don't have 'ModuleNotFoundError'
+          docker compose exec -T web pytest -v
 
-      - name: Notify Stakeholders
-        if: success()
+      - name: Notify Telegram (PR created)
+        if: steps.pr.outputs.pr_number != ''
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text="STAGING DEPLOYMENT COMPLETE %0A%0ARepository: \`${{ github.repository }}\` %0AVersion: \`${{ steps.version.outputs.version }}\` %0A%0A The code has been merged to main and successfully deployed to the staging environment for final review."
-
+          -d text="RELEASE PR CREATED %0A%0ARepository: \`${{ github.repository }}\` %0ABranch: \`${{ github.ref_name }}\` %0ARelease: \`${{ github.event.release.tag_name }}\` %0APR: #${{ steps.pr.outputs.pr_number }} %0A%0APlease review and approve for merge to main."
