@@ -1,0 +1,49 @@
+name: 2️⃣ Approval & Merge to Main (CD)
+
+on:
+  release:
+    types: [published] # This triggers when you click "Publish" on a draft release
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    name: Merge to main
+    runs-on: ubuntu-latest
+
+    steps:
+      - name:  Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name:  Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name:  Prepare main branch
+        run: |
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+      - name:  Merge dev → main
+        run: |
+          git fetch origin dev
+          git merge origin/dev --no-ff -m "Release ${{ github.event.release.tag_name }} approved"
+
+      - name:  Push to GitHub
+        run: |
+          git push origin main
+          echo " Merged to main branch!"
+
+      # --- THE TELEGRAM NOTIFICATION (STAKEHOLDER ALERT) ---
+      - name:  Notify Telegram (Success)
+        if: success()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d parse_mode="Markdown" \
+          -d text=" *PRODUCTION RELEASE DEPLOYED* %0A%0A*Repo:* \`${{ github.repository }}\` %0A*Release:* \`${{ github.event.release.tag_name }}\` %0A%0A All security scans and CI tests passed. The code has been merged to *main* and is now live. Stakeholders, the release is complete! "
