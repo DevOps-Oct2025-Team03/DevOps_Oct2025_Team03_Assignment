@@ -2,7 +2,7 @@ name: 1-Build and Test
 
 on:
   push:
-    branches: [dev] 
+    branches: [dev]
 
 permissions:
   contents: write
@@ -58,8 +58,8 @@ jobs:
           draft: true
           body: |
             # Release Candidate
-            **Version:** ${{ steps.version.outputs.rc_version }}
-            **Status:** Waiting for team approval
-            **To Approve:** Edit this release and click Publish.
+            Version: ${{ steps.version.outputs.rc_version }}
+            Status: Waiting for team approval
+            To Approve: Edit this release and click Publish.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
