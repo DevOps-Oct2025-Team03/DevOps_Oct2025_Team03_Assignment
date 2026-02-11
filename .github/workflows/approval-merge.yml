@@ -26,7 +26,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 3) Create a release branch from origin/dev and push it
+      # 3) Create a release branch from origin/dev and push it.
       - name: Create & push PR branch from dev
         env:
           TAG: ${{ github.event.release.tag_name }}
