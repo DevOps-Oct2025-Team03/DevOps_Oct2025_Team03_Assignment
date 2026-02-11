@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install -e .
+        #  pip install -e .
 
       - name: Run Final Tests
         run: pytest tests/ -v
