@@ -152,7 +152,6 @@ Manages uploaded file metadata with mandatory ownership links.
 | `size_bytes` | Integer | Not Null | Integrity check to verify the stored file size. |
 | `created_at` | DateTime | Not Null | Audit trail for tracking data creation and file lifecycle. |
 
-
 ## Local Setup
 ### Start the entire infrastructure
 ```bash
