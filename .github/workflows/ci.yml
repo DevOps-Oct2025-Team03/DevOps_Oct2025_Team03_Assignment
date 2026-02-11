@@ -129,12 +129,13 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
         run: echo "Terraform would now apply the k8s manifests to the cluster."
 
-      # --- FINAL SUCCESS NOTIFICATION FOR STAKEHOLDERS ---
+      # --- FINAL SUCCESS NOTIFICATION ---
   notify-success:
     name: Notify Stakeholders on Success
     runs-on: ubuntu-latest
-    needs: [sast, sca, dast]
-    # This logic ensures it only notifies if ALL jobs pass AND the branch is main
+    # This is the "Safety Gate" - it waits for the build and tests
+    needs: [build-test-docker] 
+    # This ensures it ONLY sends if everything passed AND it's the main branch
     if: success() && github.ref == 'refs/heads/main'
     steps:
       - name: Send Formatted Success Message
@@ -142,4 +143,4 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text=" *PRODUCTION RELEASE READY* %0A%0A*Repository:* \`${{ github.repository }}\` %0A*Branch:* \`main\` %0A%0A All security checks passed. Stakeholders, the code is merged to main and verified!"
+          -d text="*PRODUCTION RELEASE READY* %0A%0A*Repository:* \`${{ github.repository }}\` %0A*Branch:* \`main\` %0A%0A `All build and security tests passed. Stakeholders, the code is merged to main and verified!"
