@@ -136,4 +136,4 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text="*SECURITY PIPELINE SUCCESS* %0A%0A*Repository:* \`${{ github.repository }}\` %0A*Status:*  All Scans Passed%0A%0A The code has been verified by **SAST, SCA, and DAST**. %0A @Stakeholders: The code is clean and ready for review."
+          -d text="*SECURITY PIPELINE SUCCESS* %0A%0A*Repository:* \`${{ github.repository }}\` %0A*Branch:* \`${{ github.ref_name }}\` %0A*Status:* All Scans Passed%0A%0AThe code on branch \`${{ github.ref_name }}\` has been verified by **SAST, SCA, and DAST**. %0A@Stakeholders: The code is clean and ready for review."
