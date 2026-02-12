@@ -2,7 +2,7 @@ name: 3. DAST - Live Application Scan
  
 on:
   push:
-    branches: [ "dev", "main" ]
+    branches: [ "dev", "main", "dast-security-test" ]
   pull_request:
     branches: [ "dev", "main" ]
  
@@ -46,7 +46,6 @@ jobs:
           target: 'http://localhost:5000'
           cmd_options: '-a -j'
           artifact_name: 'zap-fullscan-report'
-        continue-on-error: true
  
       # Step 4: Upload reports for your Sprint 4 Documentation
       - name: Upload DAST Reports

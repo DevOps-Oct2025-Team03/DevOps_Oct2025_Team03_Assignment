@@ -12,7 +12,6 @@ def create_app(test_config=None):
     Production, Development, and Testing (Pytest/Behave).
     """
     app = Flask(__name__)
-    add_security_headers(app)
 
     # 1. Load Configuration
     if test_config is None:
@@ -49,17 +48,3 @@ def create_app(test_config=None):
 
     return app
 
-def add_security_headers(app: Flask):
-    @app.after_request
-    def set_security_headers(response):
-        # A safe "starter" CSP that works for most simple Flask apps
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "img-src 'self' data:; "
-            "style-src 'self' 'unsafe-inline'; "
-            "script-src 'self' 'unsafe-inline'; "
-            "object-src 'none'; "
-            "base-uri 'self'; "
-            "frame-ancestors 'none'"
-        )
-        return response
