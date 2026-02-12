@@ -171,3 +171,10 @@ def step_impl(context, filename, victim_user):
         target_id = f.id if f else 9999
     
     context.response = context.client.get(f'/dashboard/download/{target_id}')
+
+@then('I should strictly receive a {status_code} status code')
+def step_impl(context, status_code):
+    expected = int(status_code)
+    actual = context.response.status_code
+    path = context.response.request.path
+    assert actual == expected, f"[STRICT] Expected {expected} but got {actual}. Path: {path}"
