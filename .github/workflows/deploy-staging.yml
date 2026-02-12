@@ -72,6 +72,11 @@ jobs:
           kubectl get pods
           kubectl get services
 
+      - name: Trigger Render Deploy Hook (Staging)
+        if: success()
+        run: |
+          curl -f -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
       # --- NOTIFICATIONS ---
       - name: Notify Telegram (Deployment Success)
         if: success()
@@ -79,7 +84,7 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode="Markdown" \
-          -d text="STAGING DEPLOYMENT SUCCESSFUL %0A%0ARepository: \`${{ github.repository }}\` %0ATag: \`${{ github.ref_name }}\` %0AVersion: \`${{ steps.version.outputs.version }}\` %0A%0AAll security tests passed. Terraform successfully applied K8s manifests to the staging cluster."
+          -d text="STAGING DEPLOYMENT SUCCESSFUL %0A%0ARepository: \`${{ github.repository }}\` %0ATag: \`${{ github.ref_name }}\` %0AVersion: \`${{ steps.version.outputs.version }}\` %0A%0AAll security tests passed."
 
       - name: Notify Telegram (Deployment Failure)
         if: failure()
