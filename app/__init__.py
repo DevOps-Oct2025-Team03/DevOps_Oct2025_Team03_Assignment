@@ -13,6 +13,16 @@ def create_app(test_config=None):
     """
     app = Flask(__name__)
 
+    @app.after_request
+    def add_security_headers(response):
+    # 'default-src self' tells the browser to only load content from your domain
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; object-src 'none';"
+    
+    # Bonus: Add these to further improve your DAST score
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        return response
+
     # 1. Load Configuration
     if test_config is None:
         # Load from the Config class in config.py

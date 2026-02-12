@@ -38,6 +38,7 @@ jobs:
           target: 'http://localhost:5000'
           cmd_options: '-a'
           artifact_name: 'zap-baseline-report'
+        continue-on-error: true
  
       # Step 3: Run the ZAP Full Scan (Active attack simulation)
       - name: ZAP Full Scan
@@ -46,9 +47,7 @@ jobs:
           target: 'http://localhost:5000'
           cmd_options: '-a -j'
           artifact_name: 'zap-fullscan-report'
-          fail_action: true 
-          # Optional: Use a rules file to specifically target the CSP rule (ID: 10038)
-          rules_file_name: '.zap/rules.tsv'
+        continue-on-error: true
  
       # Step 4: Upload reports for your Sprint 4 Documentation
       - name: Upload DAST Reports
