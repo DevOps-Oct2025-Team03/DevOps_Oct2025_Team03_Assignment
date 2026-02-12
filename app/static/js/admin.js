@@ -1,22 +1,17 @@
 // Create user
-document.getElementById("create-user-form").addEventListener("submit", async (e) => {
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("create-user-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    const form = e.target;
     const data = new FormData(form);
-
-    const res = await fetch("/admin/create_user", {
-        method: "POST",
-        body: data
-    });
-
-    if (res.ok) {
-        alert("User created");
-        window.location.reload();
-    } else {
-        alert("Failed to create user");
-    }
+    const res = await fetch("/admin/create_user", { method: "POST", body: data });
+    alert(res.ok ? "User created" : "Failed to create user");
+    if (res.ok) window.location.reload();
+  });
 });
+
 
 // Delete user
 async function deleteUser(userId) {

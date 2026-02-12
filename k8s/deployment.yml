@@ -17,6 +17,7 @@ spec:
       containers:
         - name: web
           image: ghcr.io/devops-oct2025-team03/devops_oct2025_team03_assignment:dev
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:

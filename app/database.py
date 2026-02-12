@@ -28,7 +28,7 @@ class File(db.Model):
  
     id = db.Column(db.Integer, primary_key=True)
  
-    # 🔐 DATA ISOLATION (THIS LINE IS CRITICAL)
+    # DATA ISOLATION (THIS LINE IS CRITICAL)
     owner_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id"),
