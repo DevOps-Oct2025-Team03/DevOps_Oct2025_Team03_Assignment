@@ -4,7 +4,7 @@
 #   push:
 #     branches: ["dev", "main"]
 #   pull_request:
-#     branches: ["main"]
+#     branches: ["dev", "main"]
 
 # permissions:
 #   contents: read
@@ -15,31 +15,62 @@
 #     runs-on: ubuntu-latest
 
 #     steps:
+#       # ----------------------------
+#       # 1. Checkout repository
+#       # ----------------------------
 #       - name: Checkout code
 #         uses: actions/checkout@v4
 
+#       # ----------------------------
+#       # 2. Start Docker infrastructure
+#       # ----------------------------
 #       - name: Start Infrastructure (PostgreSQL + Flask)
 #         run: |
 #           docker compose up -d --build
-#           sleep 30
 
-#       - name: Seed Database & Verify Hashing
+#       # ----------------------------
+#       # 3. Wait for Flask health endpoint
+#       # (THIS IS THE CRITICAL FIX)
+#       # ----------------------------
+#       - name: Wait for Flask to be ready
 #         run: |
-#           docker compose exec -T web python seed.py
-#           docker exec app-db psql -U postgres -d appdb -c "SELECT username, password_hash FROM users;"
+#           echo "Waiting for Flask /health endpoint..."
+#           for i in {1..20}; do
+#             if curl -s http://localhost:5000/health | grep -q ok; then
+#               echo "Flask is ready"
+#               break
+#             fi
+#             echo "Waiting for Flask..."
+#             sleep 3
+#           done
 
+#       # ----------------------------
+#       # 4. Verify DB tables + auto-seeding
+#       # ----------------------------
+#       - name: Verify Database Auto-Seeding
+#         run: |
+#           docker exec app-db psql -U postgres -d appdb -c "\dt"
+#           docker exec app-db psql -U postgres -d appdb -c "SELECT username, role FROM users;"
+
+#       # ----------------------------
+#       # 5. Run tests (security + isolation)
+#       # ----------------------------
 #       - name: Run Security & Data Isolation Tests
 #         run: |
 #           docker compose exec -T web pytest -v
 
+#       # ----------------------------
+#       # 6. Verify infrastructure status
+#       # ----------------------------
 #       - name: Verify Infrastructure Status
 #         run: docker ps
 
-#       # --- GHCR: Build & Push image for Kubernetes ---
+#       # ----------------------------
+#       # 7. Build & Push image to GHCR
+#       # ----------------------------
 #       - name: Set up Docker Buildx
 #         uses: docker/setup-buildx-action@v3
 
-#       # GHCR requires lowercase image names
 #       - name: Set image name (lowercase)
 #         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
@@ -51,9 +82,6 @@
 #           username: ${{ github.actor }}
 #           password: ${{ secrets.GITHUB_TOKEN }}
 
-#       # Push different tags depending on branch:
-#       # - dev branch pushes :dev and :<sha>
-#       # - main branch pushes :latest and :<sha>
 #       - name: Build and Push Docker Image (GHCR) - dev
 #         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
 #         uses: docker/build-push-action@v6
@@ -76,6 +104,48 @@
 #             ${{ env.IMAGE }}:latest
 #             ${{ env.IMAGE }}:${{ github.sha }}
 
+#       # ----------------------------
+#       # 7.5 Create a temporary K8s cluster for testing -> GitHub Actions is failing because it doesn't have a Kubernetes cluster to talk to.
+#       # ----------------------------
+#       - name: Create K8s Kind Cluster
+#         uses: helm/kind-action@v1.10.0
+
+#       # ----------------------------
+#       # 8. Infrastructure as Code (Terraform)
+#       # ----------------------------
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3
+#         with:
+#           terraform_version: "1.7.0"
+
+#       - name: Terraform Init
+#         run: terraform init
+
+#       - name: Terraform Plan
+#         run: terraform plan
+
+#       # Simulation for Local K8s Cluster
+#       - name: Terraform Apply (Simulation)
+#         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+#         run: echo "Terraform would now apply the k8s manifests to the cluster."
+
+#       # --- FINAL SUCCESS NOTIFICATION ---
+#   notify-success:
+#     name: Notify Stakeholders on Success
+#     runs-on: ubuntu-latest
+#     # This is the "Safety Gate" - it waits for the build and tests
+#     needs: [build-test-docker] 
+#     # This ensures it ONLY sends if everything passed AND it's the main branch
+#     if: success() && github.ref == 'refs/heads/main'
+#     steps:
+#       - name: Send Formatted Success Message
+#         run: |
+#           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+#           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+#           -d parse_mode="Markdown" \
+#           -d text="*PRODUCTION RELEASE READY* %0A%0A*Repository:* \`${{ github.repository }}\` %0A*Branch:* \`main\` %0A%0A `All build and security tests passed. Stakeholders, the code is merged to main and verified!"
+
+
 
 name: DevSecOps CI Pipeline
 
@@ -86,31 +156,33 @@ on:
     branches: ["dev", "main"]
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
   build-test-docker:
     runs-on: ubuntu-latest
+    outputs:
+      rc_version: ${{ steps.version.outputs.rc_version }}
 
     steps:
-      # ----------------------------
-      # 1. Checkout repository
-      # ----------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ----------------------------
-      # 2. Start Docker infrastructure
-      # ----------------------------
+      # 1. Generate version first so it can be used for Docker tags and Release names
+      - name: Generate Version
+        id: version
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          RC_VERSION="v0.0.0-rc.${TIMESTAMP}.${SHORT_SHA}"
+          echo "rc_version=${RC_VERSION}" >> $GITHUB_OUTPUT
+          echo "RC Version: ${RC_VERSION}"
+
       - name: Start Infrastructure (PostgreSQL + Flask)
         run: |
           docker compose up -d --build
 
-      # ----------------------------
-      # 3. Wait for Flask health endpoint
-      # (THIS IS THE CRITICAL FIX)
-      # ----------------------------
       - name: Wait for Flask to be ready
         run: |
           echo "Waiting for Flask /health endpoint..."
@@ -119,34 +191,19 @@ jobs:
               echo "Flask is ready"
               break
             fi
-            echo "Waiting for Flask..."
+            echo "Waiting..."
             sleep 3
           done
 
-      # ----------------------------
-      # 4. Verify DB tables + auto-seeding
-      # ----------------------------
       - name: Verify Database Auto-Seeding
         run: |
           docker exec app-db psql -U postgres -d appdb -c "\dt"
           docker exec app-db psql -U postgres -d appdb -c "SELECT username, role FROM users;"
 
-      # ----------------------------
-      # 5. Run tests (security + isolation)
-      # ----------------------------
       - name: Run Security & Data Isolation Tests
         run: |
           docker compose exec -T web pytest -v
 
-      # ----------------------------
-      # 6. Verify infrastructure status
-      # ----------------------------
-      - name: Verify Infrastructure Status
-        run: docker ps
-
-      # ----------------------------
-      # 7. Build & Push image to GHCR
-      # ----------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -154,44 +211,42 @@ jobs:
         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Log in to GHCR
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image (GHCR) - dev
+      # 2. Tag your Docker image with the RC Version for better tracking
+      - name: Build and Push Docker Image (dev)
         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
           push: true
           tags: |
             ${{ env.IMAGE }}:dev
-            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:${{ steps.version.outputs.rc_version }}
 
-      - name: Build and Push Docker Image (GHCR) - main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
+      # 3. Create Draft Release automatically after tests pass
+      - name: Create Draft Release
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
+        uses: softprops/action-gh-release@v2
         with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ github.sha }}
+          tag_name: ${{ steps.version.outputs.rc_version }}
+          draft: true
+          body: |
+            # Release Candidate
+            **Version:** ${{ steps.version.outputs.rc_version }}
+            **Status:** Passed all CI/CD security and isolation tests on branch: ${{ github.ref_name }}.
+            **Next Step:** Publish this release to finalize the deployment.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ----------------------------
-      # 7.5 Create a temporary K8s cluster for testing -> GitHub Actions is failing because it doesn't have a Kubernetes cluster to talk to.
-      # ----------------------------
       - name: Create K8s Kind Cluster
         uses: helm/kind-action@v1.10.0
 
-      # ----------------------------
-      # 8. Infrastructure as Code (Terraform)
-      # ----------------------------
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -203,7 +258,15 @@ jobs:
       - name: Terraform Plan
         run: terraform plan
 
-      # Simulation for Local K8s Cluster
-      - name: Terraform Apply (Simulation)
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
-        run: echo "Terraform would now apply the k8s manifests to the cluster."
+  notify-success:
+    name: Notify Stakeholders on Success
+    runs-on: ubuntu-latest
+    needs: [build-test-docker] 
+    if: success() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Send Success Message
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d parse_mode="Markdown" \
+          -d text="PRODUCTION RELEASE READY %0ARepository: \`${{ github.repository }}\` %0ABranch: \`main\` %0AAll build and security tests passed. Code is verified on main branch."
