@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> 
+    <link rel="stylesheet" href="../static/css/admin.css">
     <title>Admin Dashboard</title>
 </head>
 <body>
@@ -18,7 +20,7 @@
 <hr>
 
 <h2>Create User</h2>
-<form method="POST" action="/admin/create_user">
+<form id="create-user-form" method="POST" action="/admin/create_user">
     <input type="text" name="username" placeholder="Username" required />
     <input type="password" name="password" placeholder="Password" required />
     <select name="role">
