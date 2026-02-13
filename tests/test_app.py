@@ -17,6 +17,7 @@ def test_admin_delete_self_fail_tdd(client):
     assert res.status_code == 400
 
 
+
 # =========================
 # 1. ADMIN ACTIONS (Integration Test)
 # =========================

@@ -218,7 +218,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. Tag your Docker image with the RC Version for better tracking
+      # 2. Tag your Docker image with the RC Version for better tracking 
       - name: Build and Push Docker Image (dev)
         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         uses: docker/build-push-action@v6
@@ -229,7 +229,7 @@ jobs:
             ${{ env.IMAGE }}:dev
             ${{ env.IMAGE }}:${{ steps.version.outputs.rc_version }}
 
-      # 3. Create Draft Release automatically after tests pass
+      # 3. Create Draft Release automatically after tests pass, hello 
       - name: Create Draft Release
         if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
         uses: softprops/action-gh-release@v2
@@ -237,7 +237,7 @@ jobs:
           tag_name: ${{ steps.version.outputs.rc_version }}
           draft: true
           body: |
-            # Release Candidate
+            # Release Candidate3
             **Version:** ${{ steps.version.outputs.rc_version }}
             **Status:** Passed all CI/CD security and isolation tests on branch: ${{ github.ref_name }}.
             **Next Step:** Publish this release to finalize the deployment.
