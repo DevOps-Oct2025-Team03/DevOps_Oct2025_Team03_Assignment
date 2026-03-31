@@ -2,9 +2,9 @@ name: 3. DAST - Live Application Scan
  
 on:
   push:
-    branches: [ "dev", "main" ]
+    branches: [ "dev", "main", "dast-security-test" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "dev", "main" ]
  
 # --- CRITICAL PERMISSIONS FIX ---
 permissions:
